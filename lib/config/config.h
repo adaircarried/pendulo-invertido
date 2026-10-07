@@ -19,6 +19,9 @@ constexpr int PIN_FC_DER = -1;  // final de carrera derecho: por definir
 // -------------------------------------------------------------- Encoder
 // LPD3806-600BM: 600 PPR en cuadratura completa (x4)
 constexpr int32_t ENC_CUENTAS_VUELTA = 2400;
+// true: pull-ups internas del ESP32 (~45k, débiles), solo para pruebas en la mesa.
+// false: pull-ups externas de 4.7k a 3.3 V (obligatorio con todo montado y el motor cerca).
+constexpr bool ENC_PULLUP_INTERNA = true;
 // Con el péndulo colgando como referencia (cuenta 0), la vertical arriba está a media vuelta
 constexpr int32_t ENC_CUENTAS_ARRIBA = ENC_CUENTAS_VUELTA / 2;
 // +1 o -1: ajustar para que theta > 0 hacia donde avanza el carro con a > 0
@@ -33,7 +36,7 @@ constexpr uint32_t TS_US = 2000;             // mismo periodo en microsegundos
 constexpr float FC_DERIVADA_HZ = 30.0f;      // corte del filtro paso bajo de theta_dot [Hz]
 
 constexpr int NUCLEO_CONTROL = 0;
-constexpr int PRIORIDAD_CONTROL = 20;        // configMAX_PRIORITIES = 25 en Arduino-ESP32
+constexpr int PRIORIDAD_CONTROL = 20;        // alta (el máximo en Arduino-ESP32 es 24)
 
 // ------------------------------------------------------------ Transmisión
 constexpr float PASOS_POR_METRO = 40000.0f;  // 200 x 8 micropasos / 0.040 m

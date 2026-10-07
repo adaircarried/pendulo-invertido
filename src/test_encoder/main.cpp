@@ -1,170 +1,123 @@
 // test_encoder: lectura del encoder y validación de cuentas.
 //
-// Usa exactamente el mismo módulo de encoder y la misma tarea periódica (núcleo 0, Ts = 2 ms)
-// que el programa de control. El motor nunca da pasos; solo se puede energizar el driver
-// (comando 'e') para comprobar que el ruido del chopper no altera la cuenta.
+// Núcleo 0: cada Ts = 2 ms lee el encoder (igual que lo hará el control).
+// Núcleo 1: imprime 10 veces por segundo y atiende comandos.
+// El motor nunca da pasos; 'e' solo energiza el driver para probar el ruido.
 //
-// Comandos por serial (115200):
-//   z  referencia: péndulo colgando y quieto -> cuenta 0
-//   m  marca la cuenta actual (para contar vueltas y verificar que regresa al mismo valor)
-//   r  reinicia mínimo/máximo de cuentas y estadísticas del periodo
-//   e  energiza / desenergiza el driver (sin pasos)
-//   p  pausa / reanuda la impresión
-//   h  ayuda
+// Comandos (monitor serial a 115200):
+//   z  cero: péndulo colgando y quieto -> cuenta 0
+//   m  marca la cuenta actual y reinicia el rango min..max
+//   e  energiza / apaga el driver (sin pasos)
 
 #include <Arduino.h>
 #include <config.h>
-#include <encoder_pendulo.h>
+#include <encoder.h>
 #include <periodico.h>
 
-namespace {
-
-constexpr uint32_t PERIODO_IMPRESION_MS = 100;
-constexpr float RAD_A_GRADOS = 180.0f / encoder_math::PI_F;
-
+// Lo que el núcleo 0 le manda al núcleo 1 en cada periodo
 struct Muestra {
-  EstadoEncoder e;
-  int64_t cuenta_min;  // extremos desde el último 'r': con el péndulo quieto deben coincidir
-  int64_t cuenta_max;
+  LecturaEncoder enc;
+  int32_t cuenta_min;  // con el péndulo quieto, min y max deben ser iguales (sin ruido)
+  int32_t cuenta_max;
 };
 
-EncoderPendulo encoder;
-QueueHandle_t buzon;  // cola de longitud 1 (xQueueOverwrite): núcleo 0 -> núcleo 1
+// Cola de un solo lugar: el núcleo 0 la sobreescribe, el núcleo 1 lee la última muestra
+static QueueHandle_t buzon;
 
-volatile bool pedir_cero = false;
-volatile bool pedir_reinicio_extremos = true;
+// Peticiones del núcleo 1 al núcleo 0
+static volatile bool pedir_cero = false;
+static volatile bool pedir_reinicio_rango = true;
 
-int64_t marca = 0;
-bool driver_habilitado = false;
-bool imprimir = true;
+static int32_t marca = 0;
+static bool driver_encendido = false;
 
-// ---------------------------------------------------- Núcleo 0 (tiempo real)
-// Nada de Serial ni delay aquí.
-void tareaControl(void*) {
-  static int64_t cmin = 0, cmax = 0;
+// ------------------------------------------------ Núcleo 0: cada 2 ms
+// Aquí no va Serial ni delay.
+static void tareaControl() {
+  static int32_t cmin = 0, cmax = 0;
 
   if (pedir_cero) {
-    encoder.fijarReferenciaColgando();
+    encoderCero();
     pedir_cero = false;
-    pedir_reinicio_extremos = true;
+    pedir_reinicio_rango = true;
   }
 
   Muestra m;
-  m.e = encoder.actualizar();
+  m.enc = encoderLeer();
 
-  if (pedir_reinicio_extremos) {
-    cmin = cmax = m.e.cuentas;
-    pedir_reinicio_extremos = false;
+  if (pedir_reinicio_rango) {
+    cmin = cmax = m.enc.cuentas;
+    pedir_reinicio_rango = false;
   }
-  if (m.e.cuentas < cmin) cmin = m.e.cuentas;
-  if (m.e.cuentas > cmax) cmax = m.e.cuentas;
+  cmin = min(cmin, m.enc.cuentas);
+  cmax = max(cmax, m.enc.cuentas);
   m.cuenta_min = cmin;
   m.cuenta_max = cmax;
 
   xQueueOverwrite(buzon, &m);
 }
 
-// ---------------------------------------------------- Núcleo 1 (usuario)
-void habilitarDriver(bool on) {
-  driver_habilitado = on;
-  digitalWrite(cfg::PIN_ENABLE, on ? LOW : HIGH);  // activo bajo
+// ------------------------------------------------ Núcleo 1
+static void encenderDriver(bool on) {
+  driver_encendido = on;
+  digitalWrite(cfg::PIN_ENABLE, on ? LOW : HIGH);  // ENABLE es activo bajo
 }
 
-void ayuda() {
-  Serial.println();
-  Serial.println("=== test_encoder ===");
-  Serial.printf("Encoder: %d cuentas/vuelta (%.3f grados/cuenta), Ts = %lu us\n",
-                cfg::ENC_CUENTAS_VUELTA, 360.0f / cfg::ENC_CUENTAS_VUELTA,
-                (unsigned long)cfg::TS_US);
-  Serial.println("z: cero (colgando)  m: marca  r: reinicia extremos/periodo");
-  Serial.println("e: driver on/off (sin pasos)  p: pausa  h: ayuda");
-  Serial.println("Columnas: cuentas | grados desde colgando | theta [grados] | theta_dot [rad/s] |");
-  Serial.println("          desde marca [cuentas, vueltas] | rango min..max | periodo min/max [us] |");
-  Serial.println("          ejecucion max [us] | atrasos | driver");
-  Serial.println();
-}
-
-void atenderComandos() {
+static void atenderComandos() {
   while (Serial.available()) {
-    switch (Serial.read()) {
-      case 'z':
-        pedir_cero = true;
-        marca = 0;
-        Serial.println("> referencia colgando = 0");
-        break;
-      case 'm': {
-        Muestra m;
-        if (xQueuePeek(buzon, &m, 0) == pdTRUE) marca = m.e.cuentas;
-        Serial.printf("> marca = %lld\n", (long long)marca);
-        break;
-      }
-      case 'r':
-        pedir_reinicio_extremos = true;
-        reiniciarEstadisticasPeriodo();
-        Serial.println("> extremos y periodo reiniciados");
-        break;
-      case 'e':
-        habilitarDriver(!driver_habilitado);
-        Serial.printf("> driver %s\n", driver_habilitado ? "ENERGIZADO" : "apagado");
-        break;
-      case 'p':
-        imprimir = !imprimir;
-        break;
-      case 'h':
-        ayuda();
-        break;
-      default:
-        break;
+    const char c = Serial.read();
+    Muestra m;
+    if (c == 'z') {
+      pedir_cero = true;
+      marca = 0;
+      Serial.println("> cero (colgando)");
+    } else if (c == 'm' && xQueuePeek(buzon, &m, 0) == pdTRUE) {
+      marca = m.enc.cuentas;
+      pedir_reinicio_rango = true;
+      reiniciarPeriodo();
+      Serial.printf("> marca = %ld\n", (long)marca);
+    } else if (c == 'e') {
+      encenderDriver(!driver_encendido);
+      Serial.printf("> driver %s\n", driver_encendido ? "ENERGIZADO" : "apagado");
     }
   }
 }
 
-void imprimirEstado() {
+static void imprimir() {
   Muestra m;
   if (xQueuePeek(buzon, &m, 0) != pdTRUE) return;
-  const EstadisticasPeriodo s = leerEstadisticasPeriodo();
+  uint32_t pmin, pmax;
+  leerPeriodo(pmin, pmax);
 
-  const float grados_colgando =
-      encoder_math::cuentasARad(m.e.cuentas, cfg::ENC_CUENTAS_VUELTA) * RAD_A_GRADOS;
-  const int64_t desde_marca = m.e.cuentas - marca;
-
-  Serial.printf(
-      "%8lld | %9.2f | %8.2f | %7.2f | %6lld %7.3f | %lld..%lld | %lu/%lu | %lu | %lu | %s\n",
-      (long long)m.e.cuentas, grados_colgando, m.e.theta * RAD_A_GRADOS, m.e.theta_dot,
-      (long long)desde_marca, (float)desde_marca / cfg::ENC_CUENTAS_VUELTA,
-      (long long)m.cuenta_min, (long long)m.cuenta_max, (unsigned long)s.periodo_min_us,
-      (unsigned long)s.periodo_max_us, (unsigned long)s.ejecucion_max_us,
-      (unsigned long)s.atrasos, driver_habilitado ? "ON" : "off");
+  const float vueltas = (float)(m.enc.cuentas - marca) / cfg::ENC_CUENTAS_VUELTA;
+  Serial.printf("cuentas %6ld | vueltas %7.3f | theta %7.2f° | theta_dot %6.2f rad/s | "
+                "rango %ld..%ld | Ts %lu..%lu us | driver %s\n",
+                (long)m.enc.cuentas, vueltas, degrees(m.enc.theta), m.enc.theta_dot,
+                (long)m.cuenta_min, (long)m.cuenta_max, (unsigned long)pmin,
+                (unsigned long)pmax, driver_encendido ? "ON" : "off");
 }
 
-}  // namespace
-
 void setup() {
-  // Seguridad primero: driver deshabilitado y STEP en bajo antes de cualquier otra cosa.
+  // Seguridad primero: driver apagado y STEP en bajo.
   pinMode(cfg::PIN_ENABLE, OUTPUT);
-  habilitarDriver(false);
+  encenderDriver(false);
   pinMode(cfg::PIN_STEP, OUTPUT);
   digitalWrite(cfg::PIN_STEP, LOW);
-  pinMode(cfg::PIN_DIR, OUTPUT);
-  digitalWrite(cfg::PIN_DIR, LOW);
 
   Serial.begin(115200);
   delay(200);
 
   buzon = xQueueCreate(1, sizeof(Muestra));
-  encoder.begin();
+  encoderIniciar();
+  iniciarTareaPeriodica(tareaControl, cfg::TS_US, cfg::NUCLEO_CONTROL, cfg::PRIORIDAD_CONTROL);
 
-  if (!iniciarTareaPeriodica(tareaControl, nullptr, cfg::TS_US, cfg::NUCLEO_CONTROL,
-                             cfg::PRIORIDAD_CONTROL)) {
-    Serial.println("ERROR: no se pudo crear la tarea de control");
-  }
-
-  ayuda();
+  Serial.println("\n=== test_encoder ===  z: cero  m: marca  e: driver on/off");
+  Serial.printf("Pull-ups: %s\n", cfg::ENC_PULLUP_INTERNA ? "INTERNAS (solo pruebas)" : "externas 4.7k");
   Serial.println("Deja el péndulo colgando y quieto, y presiona 'z'.");
 }
 
 void loop() {
   atenderComandos();
-  if (imprimir) imprimirEstado();
-  delay(PERIODO_IMPRESION_MS);
+  imprimir();
+  delay(100);
 }

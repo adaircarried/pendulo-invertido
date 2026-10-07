@@ -5,6 +5,11 @@ Objetivo: estabilizar el ángulo del péndulo en la vertical con un PID/PD discr
 
 Comentarios y mensajes en español. Unidades SI en todo el código (m, s, rad).
 
+**Simplicidad ante todo:** el autor debe poder explicar cada línea del firmware en clase
+(control, PID, programa). Preferir código directo (funciones simples, sin abstracciones de C++
+innecesarias) y no añadir funciones que no se usen. Con cada prueba nueva, dar las conexiones
+detalladas paso a paso.
+
 ## Hardware
 
 | Elemento | Detalle |
@@ -23,8 +28,8 @@ Comentarios y mensajes en español. Unidades SI en todo el código (m, s, rad).
 
 | Señal | GPIO |
 |---|---|
-| Encoder A (verde) | 32 (pull-up externa 4.7k a 3.3 V) |
-| Encoder B (blanco) | 33 (pull-up externa 4.7k a 3.3 V) |
+| Encoder A (verde) | 32 (pull-up 4.7k a 3.3 V) |
+| Encoder B (blanco) | 33 (pull-up 4.7k a 3.3 V) |
 | STEP | 25 |
 | DIR | 26 |
 | ENABLE (activo bajo) | 27 |
@@ -32,6 +37,8 @@ Comentarios y mensajes en español. Unidades SI en todo el código (m, s, rad).
 | Final de carrera der. | por definir |
 
 Encoder alimentado a 5 V; sus señales NUNCA deben subir a 5 V en el ESP32.
+Pruebas en la mesa: pull-ups internas del ESP32 (`ENC_PULLUP_INTERNA = true` en `config.h`).
+Montaje final: pull-ups externas de 4.7k a 3.3 V obligatorias (`ENC_PULLUP_INTERNA = false`).
 
 ## Modelo y control
 
@@ -75,8 +82,9 @@ Entornos en `platformio.ini`:
 - `test_stepper`: aceleración máxima sin pérdida de pasos.
 - `main`: control completo.
 
-Módulos compartidos en `lib/` o `src/` (encoder, motor, control, telemetría) para que las pruebas
-reutilicen exactamente el mismo código que el programa final.
+Módulos compartidos en `lib/` (config, encoder, periodico; después motor y control) para que las
+pruebas reutilicen exactamente el mismo código que el programa final. Cada entorno compila solo su
+carpeta `src/<entorno>/`.
 
 ## Pendientes conocidos
 

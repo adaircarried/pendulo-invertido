@@ -1,85 +1,56 @@
-#ifdef ARDUINO
-
 #include "periodico.h"
 
-namespace {
+#include <Arduino.h>
 
-struct Contexto {
-  FuncionPeriodica fn;
-  void* arg;
-  uint32_t periodo_us;
-  uint8_t num_timer;
-};
+static void (*funcion)() = nullptr;
+static uint32_t periodo = 0;
+static TaskHandle_t tarea = nullptr;
 
-Contexto ctx;
-TaskHandle_t tarea = nullptr;
-hw_timer_t* timer = nullptr;
+static volatile uint32_t periodo_min = 0;
+static volatile uint32_t periodo_max = 0;
+static volatile bool pedir_reinicio = true;
 
-portMUX_TYPE mux_stats = portMUX_INITIALIZER_UNLOCKED;
-EstadisticasPeriodo stats;
-volatile bool pedir_reinicio = true;
-
-void IRAM_ATTR isrTimer() {
+// Interrupción del timer: solo despierta a la tarea, el trabajo se hace fuera.
+static void IRAM_ATTR alDispararTimer() {
   BaseType_t despertar = pdFALSE;
   vTaskNotifyGiveFromISR(tarea, &despertar);
   portYIELD_FROM_ISR(despertar);
 }
 
-void cuerpoTarea(void*) {
-  // El timer se configura desde la tarea para que su interrupción quede en este mismo núcleo.
-  timer = timerBegin(ctx.num_timer, 80, true);  // APB 80 MHz / 80 = 1 tick por us
-  timerAttachInterrupt(timer, &isrTimer, true);
-  timerAlarmWrite(timer, ctx.periodo_us, true);
+static void cuerpoTarea(void*) {
+  // El timer se configura aquí para que su interrupción quede en este mismo núcleo.
+  hw_timer_t* timer = timerBegin(0, 80, true);  // 80 MHz / 80 = 1 tick por microsegundo
+  timerAttachInterrupt(timer, &alDispararTimer, true);
+  timerAlarmWrite(timer, periodo, true);        // se repite cada `periodo` us
   timerAlarmEnable(timer);
 
-  uint32_t t_previo = 0;
-  bool primero = true;
-
+  uint32_t t_anterior = micros();
   for (;;) {
-    // Devuelve cuántas notificaciones había pendientes: > 1 significa ciclos perdidos.
-    const uint32_t pendientes = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    const uint32_t t0 = micros();
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);  // dormir hasta el siguiente disparo
 
-    ctx.fn(ctx.arg);
-
-    const uint32_t ejecucion = micros() - t0;
-    const uint32_t periodo = t0 - t_previo;
-    t_previo = t0;
-
-    portENTER_CRITICAL(&mux_stats);
+    const uint32_t t = micros();
+    const uint32_t dt = t - t_anterior;
+    t_anterior = t;
     if (pedir_reinicio) {
-      stats = EstadisticasPeriodo{0, UINT32_MAX, 0, 0, 0};
+      periodo_min = periodo_max = dt;
       pedir_reinicio = false;
-      primero = true;
     }
-    stats.ciclos++;
-    if (!primero) {
-      if (periodo < stats.periodo_min_us) stats.periodo_min_us = periodo;
-      if (periodo > stats.periodo_max_us) stats.periodo_max_us = periodo;
-    }
-    if (ejecucion > stats.ejecucion_max_us) stats.ejecucion_max_us = ejecucion;
-    if (pendientes > 1) stats.atrasos += pendientes - 1;
-    portEXIT_CRITICAL(&mux_stats);
-    primero = false;
+    if (dt < periodo_min) periodo_min = dt;
+    if (dt > periodo_max) periodo_max = dt;
+
+    funcion();
   }
 }
 
-}  // namespace
-
-bool iniciarTareaPeriodica(FuncionPeriodica fn, void* arg, uint32_t periodo_us, int nucleo,
-                           int prioridad, uint8_t num_timer) {
-  ctx = Contexto{fn, arg, periodo_us, num_timer};
-  return xTaskCreatePinnedToCore(cuerpoTarea, "periodica", 4096, nullptr, prioridad, &tarea,
-                                 nucleo) == pdPASS;
+void iniciarTareaPeriodica(void (*fn)(), uint32_t periodo_us, int nucleo, int prioridad) {
+  funcion = fn;
+  periodo = periodo_us;
+  xTaskCreatePinnedToCore(cuerpoTarea, "control", 4096, nullptr, prioridad, &tarea, nucleo);
 }
 
-EstadisticasPeriodo leerEstadisticasPeriodo() {
-  portENTER_CRITICAL(&mux_stats);
-  const EstadisticasPeriodo copia = stats;
-  portEXIT_CRITICAL(&mux_stats);
-  return copia;
+void leerPeriodo(uint32_t& min_us, uint32_t& max_us) {
+  min_us = periodo_min;
+  max_us = periodo_max;
 }
 
-void reiniciarEstadisticasPeriodo() { pedir_reinicio = true; }
-
-#endif  // ARDUINO
+void reiniciarPeriodo() { pedir_reinicio = true; }
