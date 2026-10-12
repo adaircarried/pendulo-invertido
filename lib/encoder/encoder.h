@@ -1,20 +1,15 @@
-// Encoder del péndulo (LPD3806-600BM) leído por el contador de pulsos (PCNT) del ESP32.
+// encoder.h: lectura del ángulo del péndulo (retroalimentación).
 #pragma once
 
-#include <stdint.h>
-
-struct LecturaEncoder {
-  int32_t cuentas;  // desde la referencia (péndulo colgando)
-  float theta;      // [rad], 0 = vertical arriba, entre -pi y +pi
-  float theta_dot;  // [rad/s], derivada filtrada
-};
-
-// Configura el PCNT en cuadratura completa (x4) con filtro de hardware.
+// Configura el contador de pulsos de hardware y toma la posición actual como cero.
+// Al llamarla, el péndulo debe estar colgando y quieto.
 void encoderIniciar();
 
-// Pone la cuenta en 0. Llamar con el péndulo colgando y quieto.
+// Vuelve a tomar la posición actual como cero (péndulo colgando y quieto).
 void encoderCero();
 
-// Lee la cuenta y calcula theta y theta_dot. Llamar una vez por periodo Ts,
-// siempre desde la tarea de control (guarda la cuenta anterior para la derivada).
-LecturaEncoder encoderLeer();
+// Cuentas acumuladas desde el cero (2400 por vuelta).
+long encoderCuentas();
+
+// Ángulo theta [rad]: 0 en la vertical arriba, entre -pi y +pi.
+float encoderTheta();

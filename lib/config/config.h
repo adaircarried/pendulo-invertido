@@ -1,48 +1,58 @@
-// Configuración del hardware y constantes del péndulo.
-// Única fuente de verdad para pines y parámetros: todos los entornos la incluyen.
-// Unidades SI (m, s, rad).
+// config.h: pines, parámetros físicos y constantes del controlador.
+// Todos los programas (fases) usan este mismo archivo.
 #pragma once
 
-#include <stdint.h>
+#include <Arduino.h>
 
-namespace cfg {
+// ===================================================== Pines del ESP32
+const int PIN_ENCODER_A = 32;    // cable verde del encoder
+const int PIN_ENCODER_B = 33;    // cable blanco del encoder
+const int PIN_STEP = 25;         // pulso de paso al driver
+const int PIN_DIR = 26;          // dirección al driver
+const int PIN_ENABLE = 27;       // habilita el driver (activo en bajo)
+const int PIN_FINAL_IZQ = 18;    // final de carrera izquierdo
+const int PIN_FINAL_DER = 19;    // final de carrera derecho
 
-// ---------------------------------------------------------------- Pines
-constexpr int PIN_ENC_A = 32;   // verde, pull-up externa 4.7k a 3.3 V
-constexpr int PIN_ENC_B = 33;   // blanco, pull-up externa 4.7k a 3.3 V
-constexpr int PIN_STEP = 25;
-constexpr int PIN_DIR = 26;
-constexpr int PIN_ENABLE = 27;  // activo bajo
-constexpr int PIN_FC_IZQ = -1;  // final de carrera izquierdo: por definir
-constexpr int PIN_FC_DER = -1;  // final de carrera derecho: por definir
+// Finales de carrera cableados normalmente cerrados (NC) entre el pin y GND, con pull-up interna:
+// en reposo el pin lee LOW; al presionarse (o si se corta el cable) lee HIGH.
+const int NIVEL_FINAL_ACTIVADO = HIGH;
 
-// -------------------------------------------------------------- Encoder
-// LPD3806-600BM: 600 PPR en cuadratura completa (x4)
-constexpr int32_t ENC_CUENTAS_VUELTA = 2400;
-// true: pull-ups internas del ESP32 (~45k, débiles), solo para pruebas en la mesa.
-// false: pull-ups externas de 4.7k a 3.3 V (obligatorio con todo montado y el motor cerca).
-constexpr bool ENC_PULLUP_INTERNA = true;
-// Con el péndulo colgando como referencia (cuenta 0), la vertical arriba está a media vuelta
-constexpr int32_t ENC_CUENTAS_ARRIBA = ENC_CUENTAS_VUELTA / 2;
-// +1 o -1: ajustar para que theta > 0 hacia donde avanza el carro con a > 0
-constexpr int ENC_SIGNO = +1;
-// Filtro de glitches del PCNT en ciclos de APB (80 MHz), máximo 1023 = 12.8 us.
-// El péndulo cayendo gira < 2 rev/s (~250 us entre flancos), así que el máximo es seguro.
-constexpr uint16_t ENC_FILTRO_PCNT = 1023;
+// ===================================================== Encoder (sensor)
+const int CUENTAS_POR_VUELTA = 2400;  // 600 PPR x 4 (cuadratura completa)
+const int CUENTAS_ARRIBA = 1200;      // vertical arriba = colgando + media vuelta
+const int FILTRO_ENCODER = 1023;      // filtro de hardware del PCNT: ignora pulsos < 12.8 us
+// true: pull-ups internas del ESP32 (pruebas en la mesa).
+// false: pull-ups externas de 4.7k a 3.3 V (montaje final).
+const bool PULLUP_INTERNA = true;
 
-// -------------------------------------------------------------- Control
-constexpr float TS = 0.002f;                 // periodo de control [s] (500 Hz)
-constexpr uint32_t TS_US = 2000;             // mismo periodo en microsegundos
-constexpr float FC_DERIVADA_HZ = 30.0f;      // corte del filtro paso bajo de theta_dot [Hz]
+// ===================================================== Motor y transmisión
+const float PASOS_POR_METRO = 40000.0;  // 200 pasos x 8 micropasos / 0.040 m por vuelta de polea
+// Si en la Fase 4 el carro empuja al lado contrario de la caída, cambiar a true.
+const bool MOTOR_INVERTIDO = false;
 
-constexpr int NUCLEO_CONTROL = 0;
-constexpr int PRIORIDAD_CONTROL = 20;        // alta (el máximo en Arduino-ESP32 es 24)
+// Autohoming: buscar ambos finales de carrera despacio y dejar el carro al centro
+const float VELOCIDAD_HOMING = 0.05;     // [m/s]
+const float ACELERACION_HOMING = 0.5;    // [m/s²]
+const float RETROCESO_HOMING = 0.01;     // [m] se separa del final después de tocarlo
+const unsigned long TIEMPO_MAX_HOMING_MS = 30000;  // si no encuentra el final, aborta
 
-// ------------------------------------------------------------ Transmisión
-constexpr float PASOS_POR_METRO = 40000.0f;  // 200 x 8 micropasos / 0.040 m
+// ===================================================== Controlador (diseño en MATLAB)
+const float T = 0.01;  // tiempo de muestreo [s], paso 1 del diseño (100 Hz)
 
-// ---------------------------------------------------------------- Modelo
-constexpr float G = 9.81f;
-constexpr float L = 0.342f;                  // actualizar con medición real [m]
+// Ecuación en diferencias, paso 4 del diseño:  u[k] = 635.94 e[k] - 584.27 e[k-1]
+// Sale de D(z) = K (z - zc) / z, con K = 635.94 y zc = 0.91875 (paso 3, LGR en z).
+const float COEF_ERROR_ACTUAL = 635.94;    // coeficiente de e[k]   = K
+const float COEF_ERROR_ANTERIOR = 584.27;  // coeficiente de e[k-1] = K * zc
 
-}  // namespace cfg
+// ===================================================== Seguridad
+const float THETA_MAXIMO = 30.0 * PI / 180.0;   // si |theta| > 30° el péndulo ya cayó: apagar
+const float THETA_ARRANQUE = 5.0 * PI / 180.0;  // solo se arranca con |theta| < 5°
+
+// Saturaciones. Valores provisionales hasta medir los máximos en la Fase 2.
+#if FASE == 4
+const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo
+const float VELOCIDAD_MAXIMA = 0.1;    // [m/s]
+#else
+const float ACELERACION_MAXIMA = 10.0;  // [m/s²] provisional (diseño pide ~9.1 ante 10°)
+const float VELOCIDAD_MAXIMA = 0.5;     // [m/s]  provisional (simulación: ~0.46 ante 10°)
+#endif

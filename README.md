@@ -1,77 +1,71 @@
 # Péndulo invertido lineal (ESP32 + stepper)
 
-Péndulo invertido sobre carro en riel V-Slot, estabilizado con un PD discreto en un ESP32.
-Detalles de hardware, modelo y reglas del proyecto en [CLAUDE.md](CLAUDE.md).
+Control Avanzado, Unidad 2: PD digital diseñado por lugar de las raíces en z
+(T = 10 ms, `u[k] = 635.94 e[k] − 584.27 e[k−1]`), implementado en un ESP32.
+Todos los detalles del diseño y las reglas del proyecto están en [CLAUDE.md](CLAUDE.md).
 
-## Estructura
+## Archivos
 
 ```
-platformio.ini          entornos test_encoder, test_stepper, main
-lib/
-  config/config.h       pines y constantes (única fuente de verdad)
-  encoder/              lectura del encoder: cuentas -> theta, theta_dot
-  periodico/            tarea de tiempo real cada Ts, disparada por timer de hardware
-src/
-  test_encoder/         prueba 1: validación del encoder
-  test_stepper/         prueba 2: aceleración máxima sin pérdida de pasos (pendiente)
-  main/                 control completo (pendiente)
+platformio.ini            un entorno por fase
+lib/config/config.h       pines, parámetros físicos y constantes del controlador
+lib/encoder/              lectura del ángulo theta
+lib/motor/                mando del stepper, finales de carrera y autohoming
+lib/control/              ecuación en diferencias del controlador
+src/fase1_encoder/        Fase 1: encoder en banco
+src/fase2_stepper/        Fase 2: stepper en banco
+src/control/              Fases 3, 4 y 5 (mismo programa, cambia FASE)
 ```
 
-Cada entorno compila solo su carpeta de `src/` y usa los mismos módulos de `lib/`.
+## Entornos
 
-```bash
-pio run -e test_encoder -t upload -t monitor
-```
+| Entorno | Fase | Mueve el motor |
+|---|---|---|
+| `fase1_encoder` | 1. Encoder en banco | No |
+| `fase2_stepper` | 2. Aceleración máxima sin perder pasos | Sí |
+| `fase3_control_sin_motor` | 3. Controlador sin motor | No |
+| `fase4_signo` | 4. Verificación de signo (aceleración muy limitada) | Sí |
+| `fase5_lazo_cerrado` | 5. Lazo cerrado | Sí |
 
-## Prueba 1: encoder (`test_encoder`)
+En VS Code se elige el entorno en la barra inferior y se usa ✓ (compilar), → (subir) y el enchufe (monitor).
+Los comandos se escriben en el monitor y se mandan con Enter.
 
-### Material
+## Gráfica en tiempo real (Fases 3 a 5)
 
-- ESP32 (DevKit / esp32dev) y cable USB
-- Encoder LPD3806-600BM
-- Protoboard y jumpers
-- Multímetro
-- Para el montaje final: 2 resistencias de 4.7 kΩ (en la mesa se usan las pull-ups internas)
+1. Instala la extensión **Teleplot** en VS Code.
+2. Cierra el monitor serial de PlatformIO (el puerto solo puede abrirlo un programa a la vez).
+3. Abre Teleplot, elige el puerto del ESP32, 115200 baudios, y "Open".
+4. Aparecen las gráficas `theta` (grados), `aceleracion`, `velocidad` y `periodo_ms`.
+   Los comandos (`a`, `p`, `h`...) se escriben en la caja de texto de Teleplot.
 
-### Conexiones (versión de mesa, pull-ups internas)
+El comando `g` cambia entre gráfica y texto legible.
+
+## Fase 1: encoder en banco
+
+### Conexiones
 
 | Cable del encoder | Conecta a |
 |---|---|
-| Rojo (VCC) | **5V / VIN** del ESP32 |
-| Negro (GND) | **GND** del ESP32 |
-| Verde (A) | **GPIO 32** |
-| Blanco (B) | **GPIO 33** |
+| Rojo (VCC) | 5V / VIN del ESP32 |
+| Negro (GND) | GND del ESP32 |
+| Verde (A) | GPIO 32 |
+| Blanco (B) | GPIO 33 |
 | Malla (si tiene) | GND |
 
-No hace falta conectar el driver ni el motor para los pasos 1-5.
+Sin resistencias: se usan las pull-ups internas (`PULLUP_INTERNA = true`).
+No se conecta el driver ni el motor.
 
-**Antes de conectar A y B al ESP32:** alimenta el encoder (rojo a 5V, negro a GND) con A y B
-sueltos y mide con el multímetro de A a GND y de B a GND, girando el eje despacio.
-Debe marcar ~0 V o nada (salida de colector abierto). **Si marca 5 V, no lo conectes**:
-el encoder tiene pull-ups internas a 5 V y quemaría el ESP32.
-
-### Conexiones (versión final, pull-ups externas)
-
-Igual que arriba, más una resistencia de 4.7 kΩ de GPIO 32 a **3.3V** y otra de GPIO 33 a **3.3V**
-(nunca a 5V). En `lib/config/config.h` cambiar `ENC_PULLUP_INTERNA` a `false`.
-
-### Comandos (monitor serial a 115200)
-
-| Tecla | Acción |
-|---|---|
-| `z` | cero: péndulo colgando y quieto → cuenta 0 |
-| `m` | marca la cuenta actual y reinicia el rango min..max y el periodo |
-| `e` | energiza / apaga el driver (sin pasos) |
+**Revisión antes de conectar A y B:** alimenta el encoder con A y B sueltos y mide de A a GND
+y de B a GND girando el eje despacio. Debe marcar ~0 V o nada. **Si marca 5 V, no lo conectes.**
 
 ### Procedimiento
 
-1. **Cero:** péndulo (o eje) quieto, `z`. Cuenta = 0, theta = ±180°.
-2. **Cuentas por vuelta:** pega una cinta en el eje como marca, `m`, gira exactamente 5 vueltas.
-   "vueltas" debe marcar 5.000 (12000 cuentas). Repite en el otro sentido: −5.000.
-3. **Sin pérdidas:** gira rápido de ida y vuelta muchas veces y regresa a la cinta: vueltas ≈ 0.000.
-4. **Periodo:** `Ts` debe quedar cerca de 2000..2000 us (unos pocos us de diferencia).
-5. **Ruido:** eje quieto, `m`, espera un minuto: el rango min..max debe ser un solo valor.
-6. **Ruido con motor (requiere driver y motor conectados):** `e`, `m`, espera unos minutos.
-   Con pull-ups internas esta prueba es más exigente; si aparece ruido, repetir con las de 4.7 kΩ.
-7. **Signo (requiere el péndulo montado en el carro):** súbelo a la vertical (theta ≈ 0°) e inclínalo
-   hacia donde avanza el carro con `a > 0`: theta debe ser positivo. Si no, `ENC_SIGNO = -1`.
+Encender con el péndulo (o el eje) colgando y quieto: esa posición es la cuenta 0.
+
+| Prueba | Cómo | Debe dar |
+|---|---|---|
+| Cero | Encender colgando y quieto (o `z`) | cuentas 0, theta ±180° |
+| Una vuelta | `m`, dar una vuelta exacta con una cinta como marca | 2400 cuentas = 1.000 vueltas |
+| 90 grados | `m`, girar un cuarto de vuelta | 600 cuentas |
+| Sin pérdidas | `m`, girar rápido de ida y vuelta muchas veces y regresar a la cinta | 0 cuentas desde la marca (±1) |
+| Vertical | Girar media vuelta desde colgando | theta ≈ 0° |
