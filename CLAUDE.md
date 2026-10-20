@@ -72,7 +72,7 @@ Esta función es el caso límite del modelo anterior cuando m/M tiende a cero: e
 | Elemento | Valor |
 |---|---|
 | Microcontrolador | ESP32 |
-| Actuador | NEMA 17 sin reducción, driver **DRV8825**, micropasos 1/8 (M0 = 3.3 V, M1 = 3.3 V, M2 = GND) |
+| Actuador | NEMA 17 **17HS4401** (1.7 A nominal) sin reducción, driver **DRV8825** (Vref ≈ 0.65 V → 1.3 A), micropasos 1/8 (M0 = 3.3 V, M1 = 3.3 V, M2 = GND) |
 | Transmisión | Banda GT2, polea de 20 dientes (40 mm por vuelta) |
 | Conversión | 1600 pasos por vuelta, **40,000 pasos por metro** |
 | Sensor | Encoder incremental LPD3806-600BM (NPN colector abierto) |
