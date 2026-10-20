@@ -44,6 +44,7 @@ struct Muestra {
   float aceleracion;  // [m/s²]
   float velocidad;    // [m/s]
   float posicion;     // [m]
+  float thetaRef;     // [rad]
   unsigned long periodoUs;
 };
 QueueHandle_t colaTelemetria;
@@ -98,7 +99,7 @@ void tareaControl(void* parametro) {
         pararControl(PARO_LIMITE_CARRO);
       } else {
         // 2) a 4) error, ecuación en diferencias, saturación, velocidad y e[k-1]
-        controlCalcular(theta);
+        controlCalcular(theta, motorPosicion());
 
         // 5) Mandar al motor (en la Fase 3 no se mueve)
         if (FASE >= 4) {
@@ -116,6 +117,7 @@ void tareaControl(void* parametro) {
     muestra.aceleracion = aceleracionComando;
     muestra.velocidad = velocidadComando;
     muestra.posicion = motorPosicion();
+    muestra.thetaRef = thetaReferencia;
     muestra.periodoUs = periodoUs;
     xQueueOverwrite(colaTelemetria, &muestra);
 
@@ -191,6 +193,8 @@ void imprimirTelemetria() {
     Serial.printf(">aceleracion:%.2f\n", muestra.aceleracion);
     Serial.printf(">velocidad:%.3f\n", muestra.velocidad);
     Serial.printf(">periodo_ms:%.2f\n", muestra.periodoUs / 1000.0);
+    Serial.printf(">posicion:%.3f\n", muestra.posicion);
+    if (LAZO_EXTERNO) Serial.printf(">theta_ref:%.2f\n", muestra.thetaRef * 180.0 / PI);
   } else {
     Serial.printf("%s | theta %7.2f° | a %7.2f m/s² | v %6.3f m/s | x %6.3f m | periodo %lu us\n",
                   controlActivo ? "ACTIVO " : "parado ", muestra.theta * 180.0 / PI,
@@ -211,7 +215,8 @@ void setup() {
   xTaskCreatePinnedToCore(tareaControl, "control", 4096, NULL, 20, NULL, 0);
 
   Serial.println();
-  Serial.printf("=== Fase %d ===   h: homing   a: arrancar   p: parar   z: cero   g: gráfica/texto\n", FASE);
+  Serial.printf("=== Fase %d %s ===   h: homing   a: arrancar   p: parar   z: cero   g: gráfica/texto\n",
+                FASE, LAZO_EXTERNO ? "(con lazo externo de posición)" : "(diseño de la clase)");
 }
 
 void loop() {

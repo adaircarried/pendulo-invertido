@@ -55,6 +55,17 @@ const float COEF_ERROR_ANTERIOR = 584.27;  // coeficiente de e[k-1] = K * zc
 const float THETA_MAXIMO = 30.0 * PI / 180.0;   // si |theta| > 30° el péndulo ya cayó: apagar
 const float THETA_ARRANQUE = 5.0 * PI / 180.0;  // solo se arranca con |theta| < 5°
 
+// ===================================================== Lazo externo de posición (cascada)
+// LAZO_EXTERNO lo define el entorno de platformio.ini:
+//   0 = solo el diseño de la clase (referencia theta = 0)
+//   1 = cascada: el lazo externo genera la referencia de ángulo para regresar el carro al centro
+#ifndef LAZO_EXTERNO
+#define LAZO_EXTERNO 0
+#endif
+const float GANANCIA_POSICION = 0.05;   // [rad/m]       w² = g·0.05  -> w ≈ 0.7 rad/s (≈17 veces más lento que el lazo interno)
+const float GANANCIA_VELOCIDAD = 0.10;  // [rad/(m/s)]   2·zeta·w = g·0.10 -> zeta ≈ 0.7
+const float THETA_REF_MAXIMA = 3.0 * PI / 180.0;  // el lazo externo pide como máximo 3° de inclinación
+
 // Saturaciones (Fase 2: sin perder pasos hasta 7 m/s² a 0.5 m/s; con 8 m/s² ya pierde pasos).
 #if FASE == 4
 const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo

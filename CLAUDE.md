@@ -187,6 +187,10 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - **Una sola perilla de signo:** `MOTOR_INVERTIDO` en `config.h`. No hay inversión de signo del encoder.
 - **Fases 3, 4 y 5 son un solo programa** (`src/control/main.cpp`); el entorno define `FASE`. La Fase 4 usa saturaciones muy bajas.
 - **Periodo:** `vTaskDelayUntil` con el tick de FreeRTOS de 1 ms (10 ticks = 10 ms).
+- **Lazo externo de posición (aprobado, opcional):** control en cascada. El lazo interno es el diseño de la clase sin cambios;
+  el externo genera la referencia de ángulo θref = −(0.05·x + 0.10·v), limitada a ±3°, y el error queda e[k] = θref − θ[k].
+  Ganancias: g·0.05 = ω² → ω ≈ 0.7 rad/s (≈17 veces más lento que el lazo interno, 12.3 rad/s); g·0.10 = 2ζω → ζ ≈ 0.7.
+  Se activa con `-D LAZO_EXTERNO=1` en el entorno `fase5_cascada`; `fase5_lazo_cerrado` queda con el diseño original.
 
 ## 12. Estado actual
 
@@ -207,7 +211,10 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
   usaban el mismo contador PCNT 0. Solución: `stepperConnectToPin(PIN_STEP, DRIVER_RMT)`.
 - **Fase 4 aprobada:** con `MOTOR_INVERTIDO = true` el carro va hacia el lado al que cae el péndulo (DER y IZQ); theta estable al arrancar.
 - **Fase 5:** el péndulo se equilibra hasta que la deriva lleva el carro al límite del riel. Sin vibración, periodo 10 ms plano, driver aguanta.
-- Siguiente: lazo externo de posición (propuesto al autor, pendiente de aprobación).
+- Lazo externo implementado en `fase5_cascada`. Simulación con el `control.cpp` real (20 s): sin lazo externo el carro llega
+  al límite en 3–18 s; con lazo externo queda equilibrado y el carro regresa al centro. Si el cero de la vertical está
+  desfasado (0.3° → ~10 cm, 0.6° → ~21 cm), el carro se estaciona fuera del centro: se corrige ajustando `CUENTAS_ARRIBA`.
+- **Siguiente:** probar `fase5_cascada` en hardware. Propuesta pendiente: arranque desde colgando (swing-up).
 - Sin finales de carrera: centrado manual y límite por software a ±0.41 m (margen 3 cm).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,

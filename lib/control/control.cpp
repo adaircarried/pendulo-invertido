@@ -5,6 +5,7 @@
 
 #include "config.h"
 
+float thetaReferencia = 0.0;
 float errorActual = 0.0;
 float errorAnterior = 0.0;
 float aceleracionComando = 0.0;
@@ -16,9 +17,19 @@ void controlReiniciar(float theta) {
   velocidadComando = 0.0;
 }
 
-void controlCalcular(float theta) {
-  // Error respecto a la referencia theta = 0 (regulación)
-  errorActual = 0.0 - theta;
+void controlCalcular(float theta, float posicionCarro) {
+  // Referencia de ángulo: diseño de la clase = regulación, theta = 0
+  thetaReferencia = 0.0;
+
+  // Lazo externo (cascada, opcional): si el carro se aleja del centro, pide una pequeña
+  // inclinación hacia el centro; para sostenerla, el lazo interno regresa el carro.
+  if (LAZO_EXTERNO) {
+    thetaReferencia = -(GANANCIA_POSICION * posicionCarro + GANANCIA_VELOCIDAD * velocidadComando);
+    thetaReferencia = constrain(thetaReferencia, -THETA_REF_MAXIMA, THETA_REF_MAXIMA);
+  }
+
+  // Error respecto a la referencia
+  errorActual = thetaReferencia - theta;
 
   // Ecuación en diferencias del controlador (paso 4): u[k] = 635.94 e[k] - 584.27 e[k-1]
   float u = COEF_ERROR_ACTUAL * errorActual - COEF_ERROR_ANTERIOR * errorAnterior;
