@@ -69,3 +69,36 @@ Encender con el péndulo (o el eje) colgando y quieto: esa posición es la cuent
 | 90 grados | `m`, girar un cuarto de vuelta | 600 cuentas |
 | Sin pérdidas | `m`, girar rápido de ida y vuelta muchas veces y regresar a la cinta | 0 cuentas desde la marca (±1) |
 | Vertical | Girar media vuelta desde colgando | theta ≈ 0° |
+
+## Conexiones completas (sistema montado)
+
+### Resumen de pines del ESP32
+
+| ESP32 | Va a |
+|---|---|
+| VIN (5V del USB) | Encoder rojo |
+| 3.3V | Pull-ups del encoder, RST+SLP del driver, MS1/M0 y MS2/M1, (VDD si es A4988) |
+| GND | Encoder negro, GND lógico del driver, GND de la fuente de 24 V, C de ambos finales, MS3/M2 |
+| GPIO 32 | Encoder verde (A) + pull-up a 3.3V |
+| GPIO 33 | Encoder blanco (B) + pull-up a 3.3V |
+| GPIO 25 | STEP del driver |
+| GPIO 26 | DIR del driver |
+| GPIO 27 | EN del driver |
+| GPIO 18 | NC del final izquierdo |
+| GPIO 19 | NC del final derecho |
+
+### Reglas
+
+- **Tierra común:** GND del ESP32, GND del driver y negativo de la fuente de 24 V unidos.
+- Los 24 V solo van a VMOT del driver. Nunca al ESP32.
+- Capacitor de 100 µF (≥ 35 V) entre VMOT y GND del driver, lo más cerca posible, respetando polaridad.
+- Nunca conectar ni desconectar el motor con el driver energizado.
+- Pull-ups del encoder: cualquier valor entre 1k y 10k (ideal 2.2k–4.7k), siempre a **3.3V**.
+  Con externas puestas, `PULLUP_INTERNA = false` en `config.h`.
+- Micropasos 1/8: los dos primeros pines de micropaso a 3.3V y el tercero a GND (igual en A4988 y DRV8825).
+- Lado **derecho** = lado hacia el que theta es positivo (se determina con la Fase 1).
+
+### Encendido y apagado
+
+- Encender: primero USB (el programa deshabilita el driver), después la fuente de 24 V.
+- Apagar: primero la fuente de 24 V, después el USB.
