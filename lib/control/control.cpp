@@ -12,6 +12,7 @@ float aceleracionComando = 0.0;
 float velocidadComando = 0.0;
 float energiaPendulo = 0.0;
 static float thetaAnterior = 0.0;  // para estimar la velocidad angular en el swing-up
+static float signoBombeo = 1.0;    // sentido del último empuje del swing-up
 
 void controlReiniciar(float theta) {
   thetaReferencia = 0.0;
@@ -61,6 +62,7 @@ void controlAtrapar(float theta) {
 
 void swingupReiniciar(float theta) {
   thetaAnterior = theta;
+  signoBombeo = 1.0;
   aceleracionComando = 0.0;
   velocidadComando = 0.0;
 }
@@ -80,12 +82,17 @@ void swingupCalcular(float theta, float posicionCarro) {
 
   // Bombeo de energía: empujar en el sentido que hace crecer la energía (como impulsar un columpio).
   // dE/dt = -l·θ'·a·cos θ, así que con E < 0 conviene a = k·E·signo(θ'·cos θ).
-  float signo = 1.0;
-  if (thetaPunto * cos(theta) < 0) signo = -1.0;
-  aceleracionComando = GANANCIA_ENERGIA * energiaPendulo * signo;
+  // Si theta' = 0 (el encoder no cambió de cuenta) se conserva el signo anterior: elegir siempre +1
+  // empujaba siempre hacia el mismo lado y el carro se iba a la IZQ.
+  if (thetaPunto * cos(theta) > 0) signoBombeo = 1.0;
+  if (thetaPunto * cos(theta) < 0) signoBombeo = -1.0;
+  float bombeo = GANANCIA_ENERGIA * energiaPendulo * signoBombeo;
+
+  // El bombeo se limita para dejarle margen al centrado antes de la saturación final
+  bombeo = constrain(bombeo, -LIMITE_BOMBEO, LIMITE_BOMBEO);
 
   // Centrado: resorte y amortiguador virtuales para que el carro no se salga del riel
-  aceleracionComando = aceleracionComando - CENTRADO_POSICION * posicionCarro - CENTRADO_VELOCIDAD * velocidadComando;
+  aceleracionComando = bombeo - CENTRADO_POSICION * posicionCarro - CENTRADO_VELOCIDAD * velocidadComando;
 
   // Mismas saturaciones y misma conversión a velocidad que el control de equilibrio
   aceleracionComando = constrain(aceleracionComando, -ACELERACION_MAXIMA, ACELERACION_MAXIMA);

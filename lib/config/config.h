@@ -81,6 +81,9 @@ const float LONGITUD_PENDULO = 0.342;   // [m] pivote a centro de masa (datos de
 const float GANANCIA_ENERGIA = 15.0;    // [1/m] a = 15·E: colgando (E = -2·g·l = -6.7) ya pide el empuje máximo
 const float CENTRADO_POSICION = 2.0;    // [1/s²] resorte virtual: mientras sube, el carro no se aleja del centro
 const float CENTRADO_VELOCIDAD = 6.0;   // [1/s]  amortiguador virtual
+// El bombeo se limita a 4.5 m/s² para que el centrado no quede tapado por la saturación de 5.5 m/s²
+// (sin este límite el carro se iba hacia la IZQ mientras subía).
+const float LIMITE_BOMBEO = 4.5;        // [m/s²]
 const float ANGULO_ATRAPE = 15.0 * PI / 180.0;  // a menos de 15° de la vertical pasa al control de equilibrio
 // Valores elegidos con simulación (cuantización, retardo y fricción del eje): éxito ~50 %, depende de la fricción real.
 // Usa las mismas saturaciones (5.5 m/s², 0.4 m/s) que el control de equilibrio.
