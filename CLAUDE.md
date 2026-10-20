@@ -94,7 +94,7 @@ Esta función es el caso límite del modelo anterior cuando m/M tiende a cero: e
 | Final de carrera derecho | 19 |
 
 Pull-ups del encoder a 3.3 V (externas o internas del ESP32). Nunca a 5 V.
-En la mesa se usan las internas (`PULLUP_INTERNA = true`); en el montaje final, externas de 4.7k (`false`).
+En la mesa se usan las internas (`PULLUP_INTERNA = true`); en el montaje final, externas de 1k a 10k (`false`).
 
 Finales de carrera normalmente cerrados (NC) entre el pin y GND, con pull-up interna:
 en reposo leen LOW; presionados o con el cable cortado leen HIGH (falla segura).
@@ -190,7 +190,7 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 
 ## 12. Estado actual
 
-- Reestructuración terminada. Compilado contra cabeceras simuladas; falta la primera compilación real en PlatformIO.
+- Reestructuración terminada. Todos los entornos compilan en PlatformIO (confirmado por el autor).
 - **Continuar desde la Fase 1** (encoder en banco).
 - Saturaciones de la Fase 5 (10 m/s², 0.5 m/s) provisionales hasta medir en la Fase 2.
 - Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
