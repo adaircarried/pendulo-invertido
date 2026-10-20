@@ -21,7 +21,7 @@ const int NIVEL_FINAL_ACTIVADO = HIGH;
 // toma esa posición como 0. Los límites del riel se vigilan por software (cuenta de pasos).
 const bool USAR_FINALES_DE_CARRERA = false;
 const float RECORRIDO_UTIL = 0.88;  // [m] recorrido útil del carro, medido a mano
-const float MARGEN_LIMITE = 0.05;   // [m] el control se apaga 5 cm antes del final del recorrido
+const float MARGEN_LIMITE = 0.03;   // [m] el control se apaga 3 cm antes del final del recorrido (el carro aún se desliza un poco al soltarse)
 
 // ===================================================== Encoder (sensor)
 const int CUENTAS_POR_VUELTA = 2400;  // 600 PPR x 4 (cuadratura completa)

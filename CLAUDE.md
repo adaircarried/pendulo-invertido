@@ -100,8 +100,8 @@ Finales de carrera normalmente cerrados (NC) entre el pin y GND, con pull-up int
 en reposo leen LOW; presionados o con el cable cortado leen HIGH (falla segura).
 
 **Por ahora sin finales de carrera** (`USAR_FINALES_DE_CARRERA = false`): el carro se centra a mano,
-`h` toma esa posición como 0 y el control se apaga a 0.39 m del centro (recorrido útil medido 0.88 m,
-margen 5 cm). Por ahora pull-ups internas del encoder (`PULLUP_INTERNA = true`): no hay resistencias de 1k a 10k.
+`h` toma esa posición como 0 y el control se apaga a 0.41 m del centro (recorrido útil medido 0.88 m,
+margen 3 cm). Por ahora pull-ups internas del encoder (`PULLUP_INTERNA = true`): no hay resistencias de 1k a 10k.
 
 ## 5. Retroalimentación (sensor)
 
@@ -206,8 +206,9 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Fase 4: al arrancar el motor, theta saltaba ~−74°. Causa: ESP32Encoder y FastAccelStepper (modo MCPWM+PCNT)
   usaban el mismo contador PCNT 0. Solución: `stepperConnectToPin(PIN_STEP, DRIVER_RMT)`.
 - **Fase 4 aprobada:** con `MOTOR_INVERTIDO = true` el carro va hacia el lado al que cae el péndulo (DER y IZQ); theta estable al arrancar.
-- **Continuar desde la Fase 5** (lazo cerrado).
-- Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
+- **Fase 5:** el péndulo se equilibra hasta que la deriva lleva el carro al límite del riel. Sin vibración, periodo 10 ms plano, driver aguanta.
+- Siguiente: lazo externo de posición (propuesto al autor, pendiente de aprobación).
+- Sin finales de carrera: centrado manual y límite por software a ±0.41 m (margen 3 cm).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,
   desde 5° en ~3 s y desde 10° en ~1.5 s. El lazo externo de posición es el pendiente de la sección 10.
