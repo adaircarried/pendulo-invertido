@@ -234,8 +234,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
   con 0.6 m/s ~1.10 rad/s. Ganancias externas más firmes casi no mejoran.
 - Swing-up implementado como experimental en `fase6_swingup`. Primera prueba en hardware: el carro se iba a la IZQ mientras mecía (corregido, ver §11).
   Fricción medida del eje: la amplitud baja de 90° a 45° en < 1 s (b ≈ 1.4 1/s, alta). En simulación, con esa fricción y 5.5 m/s² / 0.4 m/s
-  el péndulo no alcanza a subir; la fricción probablemente viene de los sellos/rodamientos del encoder. Antes, medir la fricción del eje
-  (soltar el péndulo desde horizontal: si la amplitud tarda > 14 s en reducirse a la mitad, b < 0.1 y hay buena probabilidad).
+  el péndulo no alcanza a subir; la fricción probablemente viene de los sellos/rodamientos del encoder.
+  Criterio de referencia: para que suba, la amplitud debería tardar > 14 s en reducirse a la mitad (b < 0.1).
 - Sin finales de carrera: centrado manual y límite por software a ±0.44 m (margen 0; los 0.88 m ya tienen holgura).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,
