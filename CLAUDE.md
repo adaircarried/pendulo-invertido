@@ -205,7 +205,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
   (= 51.67·θ, porque con θ[k] = θ[k−1] la ecuación queda a = (635.94 − 584.27)·θ). Paro a más de 30° correcto.
 - Fase 4: al arrancar el motor, theta saltaba ~−74°. Causa: ESP32Encoder y FastAccelStepper (modo MCPWM+PCNT)
   usaban el mismo contador PCNT 0. Solución: `stepperConnectToPin(PIN_STEP, DRIVER_RMT)`.
-- **Continuar desde la Fase 4** (verificación de signo).
+- **Fase 4 aprobada:** con `MOTOR_INVERTIDO = true` el carro va hacia el lado al que cae el péndulo (DER y IZQ); theta estable al arrancar.
+- **Continuar desde la Fase 5** (lazo cerrado).
 - Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,
