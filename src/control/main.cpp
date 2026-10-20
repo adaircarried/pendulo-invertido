@@ -136,33 +136,33 @@ void atenderComandos() {
   if (comando == 'a') {
     float theta = encoderTheta();
     if (controlActivo) {
-      Serial.println("> el control ya está activo");
+      Serial.println("* el control ya está activo");
     } else if (FASE >= 4 && !motorHomingHecho()) {
-      Serial.println("> primero haz el homing (h)");
+      Serial.println("* primero haz el homing (h)");
     } else if (fabs(theta) > THETA_ARRANQUE) {
-      Serial.printf("> levanta el péndulo: theta = %.1f°, debe ser menor a %.0f°\n",
+      Serial.printf("* levanta el péndulo: theta = %.1f°, debe ser menor a %.0f°\n",
                     theta * 180.0 / PI, THETA_ARRANQUE * 180.0 / PI);
     } else {
       pedirArranque = true;
-      Serial.println("> CONTROL ACTIVO");
+      Serial.println("* CONTROL ACTIVO");
     }
   } else if (comando == 'p') {
     pedirParo = true;
   } else if (comando == 'h' && FASE >= 4) {
     if (controlActivo) {
-      Serial.println("> para el control antes del homing");
+      Serial.println("* para el control antes del homing");
     } else {
-      Serial.println("> homing...");
+      Serial.println("* homing...");
       if (motorHoming()) {
-        Serial.printf("> carro en el centro (posición 0). Recorrido: %.3f m\n", motorLargoRiel());
+        Serial.printf("* carro en el centro (posición 0). Recorrido: %.3f m\n", motorLargoRiel());
       }
     }
   } else if (comando == 'z') {
     if (controlActivo) {
-      Serial.println("> para el control antes de tomar el cero");
+      Serial.println("* para el control antes de tomar el cero");
     } else {
       encoderCero();
-      Serial.println("> cero (colgando)");
+      Serial.println("* cero (colgando)");
     }
   } else if (comando == 'g') {
     modoGrafica = !modoGrafica;
@@ -170,13 +170,13 @@ void atenderComandos() {
 }
 
 void reportarParo() {
-  if (motivoParo == PARO_COMANDO) Serial.println("> CONTROL PARADO por comando");
-  if (motivoParo == PARO_THETA) Serial.println("> CONTROL PARADO: |theta| > 30°, el péndulo cayó");
-  if (motivoParo == PARO_LIMITE_CARRO) Serial.println("> CONTROL PARADO: el carro llegó al límite del riel");
+  if (motivoParo == PARO_COMANDO) Serial.println("* CONTROL PARADO por comando");
+  if (motivoParo == PARO_THETA) Serial.println("* CONTROL PARADO: |theta| > 30°, el péndulo cayó");
+  if (motivoParo == PARO_LIMITE_CARRO) Serial.println("* CONTROL PARADO: el carro llegó al límite del riel");
   if (motivoParo != PARO_NINGUNO) {
-    Serial.printf("> periodo medido: %lu..%lu us, ejecución máxima: %lu us\n",
+    Serial.printf("* periodo medido: %lu..%lu us, ejecución máxima: %lu us\n",
                   periodoMinimoUs, periodoMaximoUs, ejecucionMaximaUs);
-    if (FASE >= 4) Serial.println("> centra el carro y repite el homing (h) antes de arrancar de nuevo");
+    if (FASE >= 4) Serial.println("* centra el carro y repite el homing (h) antes de arrancar de nuevo");
   }
   motivoParo = PARO_NINGUNO;
 }
