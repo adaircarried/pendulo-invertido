@@ -193,7 +193,6 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Reestructuración terminada. Todos los entornos compilan en PlatformIO (confirmado por el autor).
 - **Fase 1 aprobada:** 1 vuelta = 2400 cuentas, 90° = 600, regreso a la marca = 0, vertical = 0°. Lado DER (+) marcado.
 - Vref del DRV8825 ajustado a 0.66 V (≈ 1.3 A).
-- **Continuar desde la Fase 2** (stepper en banco).
 - Fase 2: STEP y DIR estaban cruzados (corregido). Con DIR bien conectado el motor avanzaba hacia IZQ: `MOTOR_INVERTIDO = true`.
 - **Fase 2:** polea floja corregida (apretar prisioneros sobre la cara plana del eje). Recorrido correcto (15 cm = 6000 pasos).
   Sin perder pasos hasta **7 m/s²** a 0.5 m/s; con 8 m/s² pierde pasos. No se alcanzó la meta de 15 m/s².
@@ -201,6 +200,10 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Saturaciones de la Fase 5: **5.5 m/s² y 0.4 m/s** (~80 % de lo medido). Con a = 635.94 θ[k] − 584.27 θ[k−1],
   la saturación se alcanza a partir de ~6° (≈ 0.9 m/s² por grado). Simulación no lineal con estas saturaciones:
   estable desde 2°, 4°, 6°, 8° y 10° (modelo ideal, sin pérdida de pasos ni fricción).
+- **Fase 2 aprobada** con máximo de 7 m/s² (aceptado por el autor).
+- **Fase 3 aprobada:** periodo 10 ms constante; con el péndulo quieto en ~3° la aceleración fue 2.71 m/s²
+  (= 51.67·θ, porque con θ[k] = θ[k−1] la ecuación queda a = (635.94 − 584.27)·θ). Paro a más de 30° correcto.
+- **Continuar desde la Fase 4** (verificación de signo).
 - Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,
