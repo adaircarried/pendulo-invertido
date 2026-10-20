@@ -55,11 +55,11 @@ const float COEF_ERROR_ANTERIOR = 584.27;  // coeficiente de e[k-1] = K * zc
 const float THETA_MAXIMO = 30.0 * PI / 180.0;   // si |theta| > 30° el péndulo ya cayó: apagar
 const float THETA_ARRANQUE = 5.0 * PI / 180.0;  // solo se arranca con |theta| < 5°
 
-// Saturaciones. Valores provisionales hasta medir los máximos en la Fase 2.
+// Saturaciones (Fase 2: sin perder pasos hasta 7 m/s² a 0.5 m/s; con 8 m/s² ya pierde pasos).
 #if FASE == 4
 const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo
 const float VELOCIDAD_MAXIMA = 0.1;    // [m/s]
 #else
-const float ACELERACION_MAXIMA = 10.0;  // [m/s²] provisional (diseño pide ~9.1 ante 10°)
-const float VELOCIDAD_MAXIMA = 0.5;     // [m/s]  provisional (simulación: ~0.46 ante 10°)
+const float ACELERACION_MAXIMA = 5.5;  // [m/s²] ~80 % del máximo medido (7 m/s²)
+const float VELOCIDAD_MAXIMA = 0.4;    // [m/s]  debajo de los 0.5 m/s probados
 #endif
