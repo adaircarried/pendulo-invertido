@@ -32,7 +32,10 @@ void motorIniciar() {
   pinMode(PIN_FINAL_DER, INPUT_PULLUP);
 
   generador.init();
-  stepper = generador.stepperConnectToPin(PIN_STEP);
+  // DRIVER_RMT: los pulsos de STEP se generan con el periférico RMT del ESP32.
+  // El otro modo (MCPWM + PCNT) usa el contador PCNT 0, el mismo que usa el encoder,
+  // y al arrancar el motor borraba la cuenta del péndulo.
+  stepper = generador.stepperConnectToPin(PIN_STEP, DRIVER_RMT);
   stepper->setDirectionPin(PIN_DIR, !MOTOR_INVERTIDO);  // MOTOR_INVERTIDO voltea el sentido
   stepper->setEnablePin(PIN_ENABLE, true);              // true: ENABLE activo en bajo
   stepper->setAutoEnable(false);                        // habilitar/deshabilitar lo decidimos nosotros
