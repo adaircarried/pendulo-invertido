@@ -101,7 +101,7 @@ en reposo leen LOW; presionados o con el cable cortado leen HIGH (falla segura).
 
 **Por ahora sin finales de carrera** (`USAR_FINALES_DE_CARRERA = false`): el carro se centra a mano,
 `h` toma esa posición como 0 y el control se apaga a 0.39 m del centro (recorrido útil medido 0.88 m,
-margen 5 cm). Pull-ups del encoder disponibles: 1k (válidas de 1k a 10k, a 3.3 V).
+margen 5 cm). Por ahora pull-ups internas del encoder (`PULLUP_INTERNA = true`): no hay resistencias de 1k a 10k.
 
 ## 5. Retroalimentación (sensor)
 
