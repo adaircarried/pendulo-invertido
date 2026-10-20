@@ -17,12 +17,18 @@ const int PIN_FINAL_DER = 19;    // final de carrera derecho
 // en reposo el pin lee LOW; al presionarse (o si se corta el cable) lee HIGH.
 const int NIVEL_FINAL_ACTIVADO = HIGH;
 
+// false: sin finales de carrera. El carro se pone a mano en el centro y el comando 'h'
+// toma esa posición como 0. Los límites del riel se vigilan por software (cuenta de pasos).
+const bool USAR_FINALES_DE_CARRERA = false;
+const float RECORRIDO_UTIL = 0.88;  // [m] recorrido útil del carro, medido a mano
+const float MARGEN_LIMITE = 0.05;   // [m] el control se apaga 5 cm antes del final del recorrido
+
 // ===================================================== Encoder (sensor)
 const int CUENTAS_POR_VUELTA = 2400;  // 600 PPR x 4 (cuadratura completa)
 const int CUENTAS_ARRIBA = 1200;      // vertical arriba = colgando + media vuelta
 const int FILTRO_ENCODER = 1023;      // filtro de hardware del PCNT: ignora pulsos < 12.8 us
 // true: pull-ups internas del ESP32 (pruebas en la mesa).
-// false: pull-ups externas de 4.7k a 3.3 V (montaje final).
+// false: pull-ups externas a 3.3 V, de 1k a 10k (montaje final).
 const bool PULLUP_INTERNA = true;
 
 // ===================================================== Motor y transmisión
@@ -30,7 +36,7 @@ const float PASOS_POR_METRO = 40000.0;  // 200 pasos x 8 micropasos / 0.040 m po
 // Si en la Fase 4 el carro empuja al lado contrario de la caída, cambiar a true.
 const bool MOTOR_INVERTIDO = false;
 
-// Autohoming: buscar ambos finales de carrera despacio y dejar el carro al centro
+// Autohoming (solo con finales de carrera): buscarlos despacio y dejar el carro al centro
 const float VELOCIDAD_HOMING = 0.05;     // [m/s]
 const float ACELERACION_HOMING = 0.5;    // [m/s²]
 const float RETROCESO_HOMING = 0.01;     // [m] se separa del final después de tocarlo

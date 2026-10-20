@@ -16,12 +16,17 @@ bool finalDerechoActivado();
 
 // Autohoming (bloqueante): busca el final izquierdo, luego el derecho, mide el riel
 // y deja el carro en el centro, que queda como posición 0. Devuelve false si falla.
+// Sin finales de carrera (USAR_FINALES_DE_CARRERA = false): toma la posición actual como
+// el centro (el carro se coloca a mano) y usa RECORRIDO_UTIL como largo del riel.
 bool motorHoming();
 bool motorHomingHecho();
 float motorLargoRiel();  // [m], medido en el último homing
 
 // Posición del carro [m] respecto al centro.
 float motorPosicion();
+
+// true si el carro está a menos de MARGEN_LIMITE del final del recorrido (límite por software).
+bool motorFueraDeLimites();
 
 // Lleva el carro a la posición x [m] con la velocidad y aceleración dadas (bloqueante).
 // Si se activa un final de carrera, detiene todo y devuelve false.

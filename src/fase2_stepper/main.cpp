@@ -5,7 +5,7 @@
 // al centro. Si quedó exactamente en su marca, no perdió pasos.
 //
 // Comandos (escribir y presionar Enter):
-//   h        autohoming: busca ambos finales y deja el carro al centro
+//   h        homing. Sin finales de carrera: coloca el carro a mano en el centro y presiona h
 //   a15      aceleración de prueba = 15 m/s²
 //   v0.5     velocidad de prueba = 0.5 m/s
 //   c        hace los ciclos de ida y vuelta
@@ -28,11 +28,14 @@ void hacerCiclos() {
     return;
   }
 
-  // No acercarse a menos de 5 cm de los finales de carrera
-  float distancia = min(DISTANCIA_PRUEBA, motorLargoRiel() / 2 - 0.05f);
+  // No acercarse a menos de MARGEN_LIMITE de los extremos del recorrido
+  float distancia = min(DISTANCIA_PRUEBA, motorLargoRiel() / 2 - MARGEN_LIMITE);
 
   Serial.printf("> %d ciclos de ±%.3f m con a = %.2f m/s² y v = %.2f m/s\n",
                 NUMERO_DE_CICLOS, distancia, aceleracionPrueba, velocidadPrueba);
+
+  Serial.println("> El primer movimiento va hacia DER (+). Si va hacia IZQ: corta los 24 V y pon MOTOR_INVERTIDO = true.");
+  delay(2000);
 
   for (int i = 0; i < NUMERO_DE_CICLOS; i++) {
     if (!motorMoverA(distancia, velocidadPrueba, aceleracionPrueba) ||
@@ -66,7 +69,7 @@ void loop() {
     if (comando == 'h') {
       Serial.println("> homing...");
       if (motorHoming()) {
-        Serial.printf("> homing listo. Largo del riel: %.3f m. Carro al centro.\n", motorLargoRiel());
+        Serial.printf("> carro en el centro (posición 0). Recorrido: %.3f m\n", motorLargoRiel());
         Serial.println("> Haz una marca en el riel junto al carro.");
       }
     } else if (comando == 'a' && valor > 0) {

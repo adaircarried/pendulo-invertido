@@ -54,11 +54,18 @@ void motorDetener() {
 }
 
 bool finalIzquierdoActivado() {
+  if (!USAR_FINALES_DE_CARRERA) return false;
   return digitalRead(PIN_FINAL_IZQ) == NIVEL_FINAL_ACTIVADO;
 }
 
 bool finalDerechoActivado() {
+  if (!USAR_FINALES_DE_CARRERA) return false;
   return digitalRead(PIN_FINAL_DER) == NIVEL_FINAL_ACTIVADO;
+}
+
+bool motorFueraDeLimites() {
+  float limite = motorLargoRiel() / 2 - MARGEN_LIMITE;
+  return fabs(motorPosicion()) > limite;
 }
 
 // Mueve el carro despacio hacia un lado hasta tocar ese final de carrera.
@@ -113,6 +120,14 @@ static bool irHastaFinal(bool haciaIzquierda) {
 bool motorHoming() {
   homingHecho = false;
   motorHabilitar();
+
+  // Sin finales de carrera: el carro se puso a mano en el centro y esa es la posición 0
+  if (!USAR_FINALES_DE_CARRERA) {
+    stepper->setCurrentPosition(0);
+    largoRielPasos = metrosAPasos(RECORRIDO_UTIL);
+    homingHecho = true;
+    return true;
+  }
 
   // 1) Final izquierdo: ahí se pone la cuenta de pasos en 0
   if (!irHastaFinal(true)) return false;

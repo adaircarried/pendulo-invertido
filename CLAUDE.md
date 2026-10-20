@@ -99,6 +99,10 @@ En la mesa se usan las internas (`PULLUP_INTERNA = true`); en el montaje final, 
 Finales de carrera normalmente cerrados (NC) entre el pin y GND, con pull-up interna:
 en reposo leen LOW; presionados o con el cable cortado leen HIGH (falla segura).
 
+**Por ahora sin finales de carrera** (`USAR_FINALES_DE_CARRERA = false`): el carro se centra a mano,
+`h` toma esa posición como 0 y el control se apaga a 0.39 m del centro (recorrido útil medido 0.88 m,
+margen 5 cm). Pull-ups del encoder disponibles: 1k (válidas de 1k a 10k, a 3.3 V).
+
 ## 5. Retroalimentación (sensor)
 
 - La variable medida y controlada es el **ángulo θ del péndulo**, leído con el encoder.
@@ -189,6 +193,10 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Reestructuración terminada. Compilado contra cabeceras simuladas; falta la primera compilación real en PlatformIO.
 - **Continuar desde la Fase 1** (encoder en banco).
 - Saturaciones de la Fase 5 (10 m/s², 0.5 m/s) provisionales hasta medir en la Fase 2.
+- Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
+- Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
+- Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,
+  desde 5° en ~3 s y desde 10° en ~1.5 s. El lazo externo de posición es el pendiente de la sección 10.
 
 ## 13. Cómo se hizo la reestructuración (completado)
 

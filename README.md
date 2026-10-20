@@ -84,8 +84,8 @@ Encender con el péndulo (o el eje) colgando y quieto: esa posición es la cuent
 | GPIO 25 | STEP del driver |
 | GPIO 26 | DIR del driver |
 | GPIO 27 | EN del driver |
-| GPIO 18 | NC del final izquierdo |
-| GPIO 19 | NC del final derecho |
+| GPIO 18 | NC del final izquierdo (solo si `USAR_FINALES_DE_CARRERA = true`) |
+| GPIO 19 | NC del final derecho (solo si `USAR_FINALES_DE_CARRERA = true`) |
 
 ### Reglas
 
@@ -93,10 +93,17 @@ Encender con el péndulo (o el eje) colgando y quieto: esa posición es la cuent
 - Los 24 V solo van a VMOT del driver. Nunca al ESP32.
 - Capacitor de 100 µF (≥ 35 V) entre VMOT y GND del driver, lo más cerca posible, respetando polaridad.
 - Nunca conectar ni desconectar el motor con el driver energizado.
-- Pull-ups del encoder: cualquier valor entre 1k y 10k (ideal 2.2k–4.7k), siempre a **3.3V**.
+- Pull-ups del encoder: cualquier valor entre 1k y 10k, siempre a **3.3V**. Menos de 1k no.
   Con externas puestas, `PULLUP_INTERNA = false` en `config.h`.
 - Micropasos 1/8: los dos primeros pines de micropaso a 3.3V y el tercero a GND (igual en A4988 y DRV8825).
 - Lado **derecho** = lado hacia el que theta es positivo (se determina con la Fase 1).
+
+### Sin finales de carrera (configuración actual)
+
+`USAR_FINALES_DE_CARRERA = false` en `config.h`. El carro se coloca a mano en el centro del riel y
+el comando `h` toma esa posición como 0. El control se apaga si el carro se aleja más de
+`RECORRIDO_UTIL / 2 − MARGEN_LIMITE` = 0.39 m del centro (límite por software con la cuenta de pasos).
+Paro de emergencia: cortar los 24 V.
 
 ### Encendido y apagado
 

@@ -7,7 +7,7 @@
 // Núcleo 1: loop(), comandos y telemetría por serial (gráfica en tiempo real con Teleplot).
 //
 // Comandos (escribir y presionar Enter):
-//   h  autohoming (Fases 4 y 5)
+//   h  homing (Fases 4 y 5). Sin finales de carrera: coloca el carro a mano en el centro y presiona h
 //   a  arrancar el control (péndulo levantado cerca de la vertical)
 //   p  parar el control
 //   z  cero del encoder (péndulo colgando y quieto, con el control parado)
@@ -24,7 +24,7 @@
 const int PARO_NINGUNO = 0;
 const int PARO_COMANDO = 1;
 const int PARO_THETA = 2;
-const int PARO_FINAL_DE_CARRERA = 3;
+const int PARO_LIMITE_CARRO = 3;
 
 // ---------------------------------------------------- Variables compartidas entre núcleos
 // El núcleo 1 solo "pide" (pedirArranque, pedirParo); el núcleo 0 es el único que actúa.
@@ -94,8 +94,8 @@ void tareaControl(void* parametro) {
       // Seguridad
       if (fabs(theta) > THETA_MAXIMO) {
         pararControl(PARO_THETA);
-      } else if (FASE >= 4 && (finalIzquierdoActivado() || finalDerechoActivado())) {
-        pararControl(PARO_FINAL_DE_CARRERA);
+      } else if (FASE >= 4 && (finalIzquierdoActivado() || finalDerechoActivado() || motorFueraDeLimites())) {
+        pararControl(PARO_LIMITE_CARRO);
       } else {
         // 2) a 4) error, ecuación en diferencias, saturación, velocidad y e[k-1]
         controlCalcular(theta);
@@ -154,7 +154,7 @@ void atenderComandos() {
     } else {
       Serial.println("> homing...");
       if (motorHoming()) {
-        Serial.printf("> homing listo. Largo del riel: %.3f m. Carro al centro.\n", motorLargoRiel());
+        Serial.printf("> carro en el centro (posición 0). Recorrido: %.3f m\n", motorLargoRiel());
       }
     }
   } else if (comando == 'z') {
@@ -172,11 +172,11 @@ void atenderComandos() {
 void reportarParo() {
   if (motivoParo == PARO_COMANDO) Serial.println("> CONTROL PARADO por comando");
   if (motivoParo == PARO_THETA) Serial.println("> CONTROL PARADO: |theta| > 30°, el péndulo cayó");
-  if (motivoParo == PARO_FINAL_DE_CARRERA) Serial.println("> CONTROL PARADO: final de carrera activado");
+  if (motivoParo == PARO_LIMITE_CARRO) Serial.println("> CONTROL PARADO: el carro llegó al límite del riel");
   if (motivoParo != PARO_NINGUNO) {
     Serial.printf("> periodo medido: %lu..%lu us, ejecución máxima: %lu us\n",
                   periodoMinimoUs, periodoMaximoUs, ejecucionMaximaUs);
-    if (FASE >= 4) Serial.println("> repite el homing (h) antes de arrancar de nuevo");
+    if (FASE >= 4) Serial.println("> centra el carro y repite el homing (h) antes de arrancar de nuevo");
   }
   motivoParo = PARO_NINGUNO;
 }
