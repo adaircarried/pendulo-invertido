@@ -10,6 +10,8 @@ float errorActual = 0.0;
 float errorAnterior = 0.0;
 float aceleracionComando = 0.0;
 float velocidadComando = 0.0;
+float energiaPendulo = 0.0;
+static float thetaAnterior = 0.0;  // para estimar la velocidad angular en el swing-up
 
 void controlReiniciar(float theta) {
   thetaReferencia = 0.0;
@@ -50,4 +52,43 @@ void controlCalcular(float theta, float posicionCarro) {
 
   // e[k] pasa a ser e[k-1] para la siguiente muestra
   errorAnterior = errorActual;
+}
+
+void controlAtrapar(float theta) {
+  thetaReferencia = 0.0;
+  errorAnterior = 0.0 - theta;
+}
+
+void swingupReiniciar(float theta) {
+  thetaAnterior = theta;
+  aceleracionComando = 0.0;
+  velocidadComando = 0.0;
+}
+
+void swingupCalcular(float theta, float posicionCarro) {
+  // Velocidad angular por diferencia de dos muestras. Al pasar por abajo theta brinca de +180° a -180°:
+  // se corrige sumando o restando una vuelta.
+  float cambio = theta - thetaAnterior;
+  if (cambio > PI) cambio -= 2.0 * PI;
+  if (cambio < -PI) cambio += 2.0 * PI;
+  float thetaPunto = cambio / T;
+  thetaAnterior = theta;
+
+  // Energía del péndulo por unidad de masa: 0 en la vertical arriba, -2·g·l colgando quieto
+  energiaPendulo = 0.5 * LONGITUD_PENDULO * LONGITUD_PENDULO * thetaPunto * thetaPunto
+                 + GRAVEDAD * LONGITUD_PENDULO * (cos(theta) - 1.0);
+
+  // Bombeo de energía: empujar en el sentido que hace crecer la energía (como impulsar un columpio).
+  // dE/dt = -l·θ'·a·cos θ, así que con E < 0 conviene a = k·E·signo(θ'·cos θ).
+  float signo = 1.0;
+  if (thetaPunto * cos(theta) < 0) signo = -1.0;
+  aceleracionComando = GANANCIA_ENERGIA * energiaPendulo * signo;
+
+  // Centrado: resorte y amortiguador virtuales para que el carro no se salga del riel
+  aceleracionComando = aceleracionComando - CENTRADO_POSICION * posicionCarro - CENTRADO_VELOCIDAD * velocidadComando;
+
+  // Mismas saturaciones y misma conversión a velocidad que el control de equilibrio
+  aceleracionComando = constrain(aceleracionComando, -ACELERACION_MAXIMA, ACELERACION_MAXIMA);
+  velocidadComando = velocidadComando + aceleracionComando * T;
+  velocidadComando = constrain(velocidadComando, -VELOCIDAD_MAXIMA, VELOCIDAD_MAXIMA);
 }

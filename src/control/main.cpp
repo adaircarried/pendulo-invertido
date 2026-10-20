@@ -31,6 +31,7 @@ const int PARO_LIMITE_CARRO = 3;
 volatile bool pedirArranque = false;
 volatile bool pedirParo = false;
 volatile bool controlActivo = false;
+volatile bool subiendo = false;  // swing-up en curso (solo fase6_swingup)
 volatile int motivoParo = PARO_NINGUNO;
 
 // Medición del periodo real de muestreo [us] (se reinician al arrancar el control)
@@ -78,7 +79,13 @@ void tareaControl(void* parametro) {
 
     // Peticiones del núcleo 1
     if (pedirArranque) {
-      controlReiniciar(theta);  // e[k-1] = e[k] y v = 0
+      if (SWING_UP && fabs(theta) > THETA_ARRANQUE) {
+        swingupReiniciar(theta);  // empieza meciendo el péndulo
+        subiendo = true;
+      } else {
+        controlReiniciar(theta);  // e[k-1] = e[k] y v = 0
+        subiendo = false;
+      }
       periodoMinimoUs = 1000000;
       periodoMaximoUs = 0;
       ejecucionMaximaUs = 0;
@@ -92,14 +99,24 @@ void tareaControl(void* parametro) {
     }
 
     if (controlActivo) {
-      // Seguridad
-      if (fabs(theta) > THETA_MAXIMO) {
+      // Swing-up: al acercarse a la vertical, pasar al control de equilibrio
+      if (subiendo && fabs(theta) < ANGULO_ATRAPE) {
+        controlAtrapar(theta);
+        subiendo = false;
+      }
+
+      // Seguridad (mientras sube, el ángulo grande es normal)
+      if (!subiendo && fabs(theta) > THETA_MAXIMO) {
         pararControl(PARO_THETA);
       } else if (FASE >= 4 && (finalIzquierdoActivado() || finalDerechoActivado() || motorFueraDeLimites())) {
         pararControl(PARO_LIMITE_CARRO);
       } else {
-        // 2) a 4) error, ecuación en diferencias, saturación, velocidad y e[k-1]
-        controlCalcular(theta, motorPosicion());
+        if (subiendo) {
+          swingupCalcular(theta, motorPosicion());
+        } else {
+          // 2) a 4) error, ecuación en diferencias, saturación, velocidad y e[k-1]
+          controlCalcular(theta, motorPosicion());
+        }
 
         // 5) Mandar al motor (en la Fase 3 no se mueve)
         if (FASE >= 4) {
@@ -141,12 +158,16 @@ void atenderComandos() {
       Serial.println("* el control ya está activo");
     } else if (FASE >= 4 && !motorHomingHecho()) {
       Serial.println("* primero haz el homing (h)");
-    } else if (fabs(theta) > THETA_ARRANQUE) {
+    } else if (!SWING_UP && fabs(theta) > THETA_ARRANQUE) {
       Serial.printf("* levanta el péndulo: theta = %.1f°, debe ser menor a %.0f°\n",
                     theta * 180.0 / PI, THETA_ARRANQUE * 180.0 / PI);
     } else {
       pedirArranque = true;
-      Serial.println("* CONTROL ACTIVO");
+      if (SWING_UP && fabs(theta) > THETA_ARRANQUE) {
+        Serial.println("* SWING-UP: subiendo el péndulo");
+      } else {
+        Serial.println("* CONTROL ACTIVO");
+      }
     }
   } else if (comando == 'p') {
     pedirParo = true;
@@ -195,6 +216,7 @@ void imprimirTelemetria() {
     Serial.printf(">periodo_ms:%.2f\n", muestra.periodoUs / 1000.0);
     Serial.printf(">posicion:%.3f\n", muestra.posicion);
     if (LAZO_EXTERNO) Serial.printf(">theta_ref:%.2f\n", muestra.thetaRef * 180.0 / PI);
+    if (SWING_UP) Serial.printf(">energia:%.2f\n", energiaPendulo);
   } else {
     Serial.printf("%s | theta %7.2f° | a %7.2f m/s² | v %6.3f m/s | x %6.3f m | periodo %lu us\n",
                   controlActivo ? "ACTIVO " : "parado ", muestra.theta * 180.0 / PI,
@@ -215,8 +237,12 @@ void setup() {
   xTaskCreatePinnedToCore(tareaControl, "control", 4096, NULL, 20, NULL, 0);
 
   Serial.println();
-  Serial.printf("=== Fase %d %s ===   h: homing   a: arrancar   p: parar   z: cero   g: gráfica/texto\n",
-                FASE, LAZO_EXTERNO ? "(con lazo externo de posición)" : "(diseño de la clase)");
+  if (SWING_UP) {
+    Serial.println("=== Fase 6: swing-up + equilibrio con lazo externo ===   h: homing   a: arrancar   p: parar   z: cero   g: gráfica/texto");
+  } else {
+    Serial.printf("=== Fase %d %s ===   h: homing   a: arrancar   p: parar   z: cero   g: gráfica/texto\n",
+                  FASE, LAZO_EXTERNO ? "(con lazo externo de posición)" : "(diseño de la clase)");
+  }
 }
 
 void loop() {

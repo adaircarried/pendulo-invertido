@@ -27,6 +27,7 @@ src/control/              Fases 3, 4 y 5 (mismo programa, cambia FASE)
 | `fase4_signo` | 4. Verificación de signo (aceleración muy limitada) | Sí |
 | `fase5_lazo_cerrado` | 5. Lazo cerrado (diseño de la clase) | Sí |
 | `fase5_cascada` | 5. Lazo cerrado + lazo externo de posición (el carro regresa al centro) | Sí |
+| `fase6_swingup` | Experimental: sube el péndulo desde colgando y luego equilibra como `fase5_cascada` | Sí |
 
 En VS Code se elige el entorno en la barra inferior y se usa ✓ (compilar), → (subir) y el enchufe (monitor).
 Los comandos se escriben en el monitor y se mandan con Enter.

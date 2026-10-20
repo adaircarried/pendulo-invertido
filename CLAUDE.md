@@ -195,6 +195,12 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
   en cada muestra (por el término de velocidad) y la acción derivativa del lazo interno lo amplificaba (a[k] recibía ≈ +0.64·a[k−1],
   ganancia efectiva ≈ 2.7×); con el retardo real del motor se saturaba. Con θref filtrado, la simulación con cuantización y
   retardo de 1–6 muestras queda estable 20 s (antes caía con 4 muestras de retardo).
+- **Swing-up (experimental, entorno `fase6_swingup`):** no es parte del diseño de la clase. Mientras sube usa control por energía:
+  E = ½·l²·θ'² + g·l·(cos θ − 1), a = 15·E·signo(θ'·cos θ) − 2·x − 6·v (centrado), con las mismas saturaciones (5.5 m/s², 0.4 m/s).
+  θ' se estima con la diferencia de dos muestras, corrigiendo el salto de ±180° al pasar por abajo. A menos de 15° de la vertical
+  pasa al control de equilibrio (diseño de la clase + lazo externo), con `controlAtrapar` (e[k−1] = e[k] sin frenar el carro).
+  Mientras sube no aplica el paro por |θ| > 30°; el límite del riel sí. Simulación del código real: sube en 6–12 s si la fricción
+  del eje es baja (b ≤ 0.1 1/s); con b = 0.3 no alcanza a subir y el carro llega al límite del riel. Éxito ≈ 50–60 %.
 
 ## 12. Estado actual
 
@@ -224,7 +230,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Rechazo a perturbaciones (simulación, toque = velocidad angular inicial): lo limita el recorrido del carro, no la aceleración.
   Con 5.5 m/s² y 0.4 m/s aguanta ~0.80 rad/s; con 6.5 m/s² y 0.5 m/s ~0.95 rad/s (probado en hardware, descartado por el autor);
   con 0.6 m/s ~1.10 rad/s. Ganancias externas más firmes casi no mejoran.
-- Swing-up aprobado por el autor como `fase6_swingup`, después de validar la cascada.
+- Swing-up implementado como experimental en `fase6_swingup`; pendiente de probar en hardware. Antes, medir la fricción del eje
+  (soltar el péndulo desde horizontal: si la amplitud tarda > 14 s en reducirse a la mitad, b < 0.1 y hay buena probabilidad).
 - Sin finales de carrera: centrado manual y límite por software a ±0.44 m (margen 0; los 0.88 m ya tienen holgura).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,

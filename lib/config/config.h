@@ -69,6 +69,22 @@ const float THETA_REF_MAXIMA = 3.0 * PI / 180.0;  // el lazo externo pide como m
 // derivativa del lazo interno (el término con e[k-1]) la amplificaba ~2.7 veces; el carro se saturaba.
 const float TAU_REFERENCIA = 0.5;  // [s] constante de tiempo del filtro (probada en simulación con retardo del motor)
 
+// ===================================================== Swing-up (arranque desde colgando)
+// SWING_UP lo define el entorno de platformio.ini: 1 solo en fase6_swingup.
+// Control por energía (no es parte del diseño de la clase): mece el péndulo hasta subirlo y,
+// cerca de la vertical, cambia al control de equilibrio (diseño de la clase + lazo externo).
+#ifndef SWING_UP
+#define SWING_UP 0
+#endif
+const float GRAVEDAD = 9.81;            // [m/s²]
+const float LONGITUD_PENDULO = 0.342;   // [m] pivote a centro de masa (datos del sistema)
+const float GANANCIA_ENERGIA = 15.0;    // [1/m] a = 15·E: colgando (E = -2·g·l = -6.7) ya pide el empuje máximo
+const float CENTRADO_POSICION = 2.0;    // [1/s²] resorte virtual: mientras sube, el carro no se aleja del centro
+const float CENTRADO_VELOCIDAD = 6.0;   // [1/s]  amortiguador virtual
+const float ANGULO_ATRAPE = 15.0 * PI / 180.0;  // a menos de 15° de la vertical pasa al control de equilibrio
+// Valores elegidos con simulación (cuantización, retardo y fricción del eje): éxito ~50 %, depende de la fricción real.
+// Usa las mismas saturaciones (5.5 m/s², 0.4 m/s) que el control de equilibrio.
+
 // Saturaciones (Fase 2: sin perder pasos hasta 7 m/s² a 0.5 m/s; con 8 m/s² ya pierde pasos).
 #if FASE == 4
 const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo
