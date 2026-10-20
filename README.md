@@ -103,7 +103,7 @@ Encender con el péndulo (o el eje) colgando y quieto: esa posición es la cuent
 
 `USAR_FINALES_DE_CARRERA = false` en `config.h`. El carro se coloca a mano en el centro del riel y
 el comando `h` toma esa posición como 0. El control se apaga si el carro se aleja más de
-`RECORRIDO_UTIL / 2 − MARGEN_LIMITE` = 0.41 m del centro (límite por software con la cuenta de pasos).
+`RECORRIDO_UTIL / 2 − MARGEN_LIMITE` = 0.44 m del centro (límite por software con la cuenta de pasos).
 Paro de emergencia: cortar los 24 V.
 
 ### Encendido y apagado

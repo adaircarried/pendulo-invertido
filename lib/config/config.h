@@ -21,7 +21,7 @@ const int NIVEL_FINAL_ACTIVADO = HIGH;
 // toma esa posición como 0. Los límites del riel se vigilan por software (cuenta de pasos).
 const bool USAR_FINALES_DE_CARRERA = false;
 const float RECORRIDO_UTIL = 0.88;  // [m] recorrido útil del carro, medido a mano
-const float MARGEN_LIMITE = 0.03;   // [m] el control se apaga 3 cm antes del final del recorrido (el carro aún se desliza un poco al soltarse)
+const float MARGEN_LIMITE = 0.0;    // [m] sin margen: los 0.88 m medidos ya dejan holgura física en cada extremo
 
 // ===================================================== Encoder (sensor)
 const int CUENTAS_POR_VUELTA = 2400;  // 600 PPR x 4 (cuadratura completa)
@@ -74,6 +74,6 @@ const float TAU_REFERENCIA = 0.5;  // [s] constante de tiempo del filtro (probad
 const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo
 const float VELOCIDAD_MAXIMA = 0.1;    // [m/s]
 #else
-const float ACELERACION_MAXIMA = 5.5;  // [m/s²] ~80 % del máximo medido (7 m/s²)
-const float VELOCIDAD_MAXIMA = 0.4;    // [m/s]  debajo de los 0.5 m/s probados
+const float ACELERACION_MAXIMA = 6.5;  // [m/s²] ~93 % del máximo medido sin perder pasos (7 m/s² a 0.5 m/s)
+const float VELOCIDAD_MAXIMA = 0.5;    // [m/s]  velocidad probada en la Fase 2
 #endif
