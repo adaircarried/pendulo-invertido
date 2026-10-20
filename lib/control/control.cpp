@@ -12,20 +12,24 @@ float aceleracionComando = 0.0;
 float velocidadComando = 0.0;
 
 void controlReiniciar(float theta) {
+  thetaReferencia = 0.0;
   errorAnterior = 0.0 - theta;
   aceleracionComando = 0.0;
   velocidadComando = 0.0;
 }
 
 void controlCalcular(float theta, float posicionCarro) {
-  // Referencia de ángulo: diseño de la clase = regulación, theta = 0
-  thetaReferencia = 0.0;
-
-  // Lazo externo (cascada, opcional): si el carro se aleja del centro, pide una pequeña
-  // inclinación hacia el centro; para sostenerla, el lazo interno regresa el carro.
   if (LAZO_EXTERNO) {
-    thetaReferencia = -(GANANCIA_POSICION * posicionCarro + GANANCIA_VELOCIDAD * velocidadComando);
-    thetaReferencia = constrain(thetaReferencia, -THETA_REF_MAXIMA, THETA_REF_MAXIMA);
+    // Lazo externo (cascada): si el carro se aleja del centro, pide una pequeña
+    // inclinación hacia el centro; para sostenerla, el lazo interno regresa el carro.
+    float thetaDeseada = -(GANANCIA_POSICION * posicionCarro + GANANCIA_VELOCIDAD * velocidadComando);
+    thetaDeseada = constrain(thetaDeseada, -THETA_REF_MAXIMA, THETA_REF_MAXIMA);
+
+    // Filtro de primer orden: la referencia se acerca suave a thetaDeseada (constante TAU_REFERENCIA)
+    thetaReferencia = thetaReferencia + (T / TAU_REFERENCIA) * (thetaDeseada - thetaReferencia);
+  } else {
+    // Diseño de la clase: regulación, theta = 0
+    thetaReferencia = 0.0;
   }
 
   // Error respecto a la referencia

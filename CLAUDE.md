@@ -191,6 +191,10 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
   el externo genera la referencia de ángulo θref = −(0.05·x + 0.10·v), limitada a ±3°, y el error queda e[k] = θref − θ[k].
   Ganancias: g·0.05 = ω² → ω ≈ 0.7 rad/s (≈17 veces más lento que el lazo interno, 12.3 rad/s); g·0.10 = 2ζω → ζ ≈ 0.7.
   Se activa con `-D LAZO_EXTERNO=1` en el entorno `fase5_cascada`; `fase5_lazo_cerrado` queda con el diseño original.
+  **Filtro de la referencia (τ = 0.5 s):** en la primera prueba en hardware la cascada duró menos que el PD solo. Causa: θref cambiaba
+  en cada muestra (por el término de velocidad) y la acción derivativa del lazo interno lo amplificaba (a[k] recibía ≈ +0.64·a[k−1],
+  ganancia efectiva ≈ 2.7×); con el retardo real del motor se saturaba. Con θref filtrado, la simulación con cuantización y
+  retardo de 1–6 muestras queda estable 20 s (antes caía con 4 muestras de retardo).
 
 ## 12. Estado actual
 
@@ -214,7 +218,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Lazo externo implementado en `fase5_cascada`. Simulación con el `control.cpp` real (20 s): sin lazo externo el carro llega
   al límite en 3–18 s; con lazo externo queda equilibrado y el carro regresa al centro. Si el cero de la vertical está
   desfasado (0.3° → ~10 cm, 0.6° → ~21 cm), el carro se estaciona fuera del centro: se corrige ajustando `CUENTAS_ARRIBA`.
-- **Siguiente:** probar `fase5_cascada` en hardware. Propuesta pendiente: arranque desde colgando (swing-up).
+- Primera prueba de `fase5_cascada`: se equilibraba casi nada (sin filtro). Corregido con el filtro de θref; volver a probar.
+- Swing-up aprobado por el autor como `fase6_swingup`, después de validar la cascada.
 - Sin finales de carrera: centrado manual y límite por software a ±0.41 m (margen 3 cm).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
 - Deriva esperada (simulación con el límite de ±0.39 m): desde 2° el carro llega al límite en ~8 s,

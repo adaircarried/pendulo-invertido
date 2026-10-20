@@ -65,6 +65,9 @@ const float THETA_ARRANQUE = 5.0 * PI / 180.0;  // solo se arranca con |theta| <
 const float GANANCIA_POSICION = 0.05;   // [rad/m]       w² = g·0.05  -> w ≈ 0.7 rad/s (≈17 veces más lento que el lazo interno)
 const float GANANCIA_VELOCIDAD = 0.10;  // [rad/(m/s)]   2·zeta·w = g·0.10 -> zeta ≈ 0.7
 const float THETA_REF_MAXIMA = 3.0 * PI / 180.0;  // el lazo externo pide como máximo 3° de inclinación
+// Filtro de primer orden de la referencia: sin él, la referencia cambiaba en cada muestra y la parte
+// derivativa del lazo interno (el término con e[k-1]) la amplificaba ~2.7 veces; el carro se saturaba.
+const float TAU_REFERENCIA = 0.5;  // [s] constante de tiempo del filtro (probada en simulación con retardo del motor)
 
 // Saturaciones (Fase 2: sin perder pasos hasta 7 m/s² a 0.5 m/s; con 8 m/s² ya pierde pasos).
 #if FASE == 4
