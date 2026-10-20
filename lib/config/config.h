@@ -33,8 +33,9 @@ const bool PULLUP_INTERNA = true;
 
 // ===================================================== Motor y transmisión
 const float PASOS_POR_METRO = 40000.0;  // 200 pasos x 8 micropasos / 0.040 m por vuelta de polea
-// Si en la Fase 4 el carro empuja al lado contrario de la caída, cambiar a true.
-const bool MOTOR_INVERTIDO = false;
+// true: medido en la Fase 2 para que el sentido positivo del motor vaya hacia DER (+).
+// Si en la Fase 4 el carro empuja al lado contrario de la caída, cambiarlo.
+const bool MOTOR_INVERTIDO = true;
 
 // Autohoming (solo con finales de carrera): buscarlos despacio y dejar el carro al centro
 const float VELOCIDAD_HOMING = 0.05;     // [m/s]

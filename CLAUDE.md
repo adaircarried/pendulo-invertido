@@ -194,6 +194,7 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - **Fase 1 aprobada:** 1 vuelta = 2400 cuentas, 90° = 600, regreso a la marca = 0, vertical = 0°. Lado DER (+) marcado.
 - Vref del DRV8825 ajustado a 0.66 V (≈ 1.3 A).
 - **Continuar desde la Fase 2** (stepper en banco).
+- Fase 2: STEP y DIR estaban cruzados (corregido). Con DIR bien conectado el motor avanzaba hacia IZQ: `MOTOR_INVERTIDO = true`.
 - Saturaciones de la Fase 5 (10 m/s², 0.5 m/s) provisionales hasta medir en la Fase 2.
 - Sin finales de carrera: centrado manual y límite por software a ±0.39 m.
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).

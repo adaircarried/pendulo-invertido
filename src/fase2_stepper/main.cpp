@@ -34,7 +34,7 @@ void hacerCiclos() {
   Serial.printf("> %d ciclos de ±%.3f m con a = %.2f m/s² y v = %.2f m/s\n",
                 NUMERO_DE_CICLOS, distancia, aceleracionPrueba, velocidadPrueba);
 
-  Serial.println("> El primer movimiento va hacia DER (+). Si va hacia IZQ: corta los 24 V y pon MOTOR_INVERTIDO = true.");
+  Serial.println("> El primer movimiento va hacia DER (+). Si va hacia IZQ: corta los 24 V y cambia MOTOR_INVERTIDO en config.h.");
   delay(2000);
 
   for (int i = 0; i < NUMERO_DE_CICLOS; i++) {
