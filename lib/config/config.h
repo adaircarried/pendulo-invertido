@@ -74,6 +74,6 @@ const float TAU_REFERENCIA = 0.5;  // [s] constante de tiempo del filtro (probad
 const float ACELERACION_MAXIMA = 1.0;  // [m/s²] muy limitada para verificar el signo
 const float VELOCIDAD_MAXIMA = 0.1;    // [m/s]
 #else
-const float ACELERACION_MAXIMA = 6.5;  // [m/s²] ~93 % del máximo medido sin perder pasos (7 m/s² a 0.5 m/s)
-const float VELOCIDAD_MAXIMA = 0.5;    // [m/s]  velocidad probada en la Fase 2
+const float ACELERACION_MAXIMA = 5.5;  // [m/s²] ~80 % del máximo medido (7 m/s²)
+const float VELOCIDAD_MAXIMA = 0.4;    // [m/s]  debajo de los 0.5 m/s probados
 #endif

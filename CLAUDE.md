@@ -205,7 +205,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - **Fase 2:** polea floja corregida (apretar prisioneros sobre la cara plana del eje). Recorrido correcto (15 cm = 6000 pasos).
   Sin perder pasos hasta **7 m/s²** a 0.5 m/s; con 8 m/s² pierde pasos. No se alcanzó la meta de 15 m/s².
   El driver se calienta mucho: necesita disipador y ventilador.
-- Saturaciones de la Fase 5: primero 5.5 m/s² y 0.4 m/s; ahora **6.5 m/s² y 0.5 m/s** (para aguantar toques). Con a = 635.94 θ[k] − 584.27 θ[k−1],
+- Saturaciones de la Fase 5: **5.5 m/s² y 0.4 m/s**. Se probó 6.5 m/s² y 0.5 m/s para aguantar toques; al autor le gustó más
+  el resultado con 5.5 y 0.4, así que se regresó a esos valores. Con a = 635.94 θ[k] − 584.27 θ[k−1],
   la saturación se alcanza a partir de ~6° (≈ 0.9 m/s² por grado). Simulación no lineal con estas saturaciones:
   estable desde 2°, 4°, 6°, 8° y 10° (modelo ideal, sin pérdida de pasos ni fricción).
 - **Fase 2 aprobada** con máximo de 7 m/s² (aceptado por el autor).
@@ -221,8 +222,8 @@ Cada fase es un entorno separado en `platformio.ini` y reutiliza los mismos mód
 - Primera prueba de `fase5_cascada`: se equilibraba casi nada (sin filtro). Corregido con el filtro de θref.
 - **`fase5_cascada` funciona:** más de 20 s equilibrado, el carro se queda prácticamente al centro, θref suave.
 - Rechazo a perturbaciones (simulación, toque = velocidad angular inicial): lo limita el recorrido del carro, no la aceleración.
-  Con 5.5 m/s² y 0.4 m/s aguanta ~0.80 rad/s; con **6.5 m/s² y 0.5 m/s** ~0.95 rad/s (aplicado); con 0.6 m/s ~1.10 rad/s
-  (requiere probar 0.6 m/s en la Fase 2). Ganancias externas más firmes casi no mejoran.
+  Con 5.5 m/s² y 0.4 m/s aguanta ~0.80 rad/s; con 6.5 m/s² y 0.5 m/s ~0.95 rad/s (probado en hardware, descartado por el autor);
+  con 0.6 m/s ~1.10 rad/s. Ganancias externas más firmes casi no mejoran.
 - Swing-up aprobado por el autor como `fase6_swingup`, después de validar la cascada.
 - Sin finales de carrera: centrado manual y límite por software a ±0.44 m (margen 0; los 0.88 m ya tienen holgura).
 - Lado DER (+) = lado hacia el que theta es positivo (Fase 1); el motor debe avanzar hacia ahí (se ve en la Fase 2).
