@@ -37,7 +37,8 @@ pie = ParagraphStyle("pie", fontName="DVI", fontSize=8.6, leading=11, alignment=
 codigo = ParagraphStyle("cod", fontName="DVM", fontSize=7.9, leading=10.2)
 
 
-def P(t): return Paragraph(t, cuerpo)
+cuerpoIntro = ParagraphStyle("ci", parent=cuerpo)  # párrafo que presenta una ecuación o tabla
+def P(t): return Paragraph(t, cuerpoIntro if t.rstrip().endswith(":") else cuerpo)
 def H(t): return Paragraph(t, h1)
 def E(t): return Paragraph(t, ecu)
 
@@ -141,7 +142,7 @@ h.append(P("<b>Actuador.</b> El controlador entrega aceleración, pero el motor 
            "supuesto en el diseño. Los pulsos de paso los genera el hardware (librería FastAccelStepper)."))
 h.append(P("<b>Condición inicial.</b> Al arrancar se usa e[k−1] = e[k] y v = 0. Con e[k−1] = 0, la primera muestra pediría "
            "≈111 m/s² con el péndulo a 10°; así pide los ≈9 m/s² esperados por el diseño."))
-h.append(P("La Tabla 1 relaciona cada resultado del diseño con el código; la Figura 2 muestra la función del controlador."))
+h.append(P("La Tabla 1 relaciona cada resultado del diseño con el código, y la Figura 2 muestra la función del controlador:"))
 h.append(tabla([
     ["Resultado del diseño", "Dónde está en el código"],
     ["T = 0.01 s", "config.h: const float T = 0.01; &nbsp;main.cpp: vTaskDelayUntil cada 10 ticks de 1 ms"],
@@ -222,6 +223,43 @@ def numerar(canvas, doc):
     canvas.drawRightString(letter[0] - 2 * cm, 1.2 * cm, f"U2EP2MTR09A_E8 · {doc.page}")
     canvas.restoreState()
 
+
+# Cada tabla se queda en la misma hoja que su pie
+juntos = []
+for f in h:
+    if isinstance(f, Paragraph) and f.style is pie and juntos and isinstance(juntos[-1], (Table, KeepTogether)):
+        juntos[-1] = KeepTogether([juntos[-1], f])
+    else:
+        juntos.append(f)
+h = juntos
+
+# Bloques que no se parten entre hojas: cada título y cada párrafo que termina en ":" se une con lo
+# que le sigue, y cada párrafo queda completo. Si un bloque no cabe, pasa entero a la siguiente hoja.
+def aplanar(lista):
+    # Saca el contenido de los KeepTogether anidados: un grupo dentro de otro hace que reportlab los separe
+    plano = []
+    for f in lista:
+        if isinstance(f, KeepTogether):
+            plano.extend(aplanar(f._content))
+        else:
+            plano.append(f)
+    return plano
+
+
+bloques = []
+pendientes = []
+for f in h:
+    if isinstance(f, Paragraph) and f.style.name in ("h1", "ci"):
+        pendientes.append(f)
+        continue
+    grupo = aplanar(pendientes + [f])
+    pendientes = []
+    if isinstance(f, PageBreak):
+        bloques.extend(grupo)
+    else:
+        bloques.append(KeepTogether(grupo))
+bloques.extend(pendientes)
+h = bloques
 
 doc = SimpleDocTemplate(SALIDA, pagesize=letter, leftMargin=2.2 * cm, rightMargin=2.2 * cm,
                         topMargin=1.8 * cm, bottomMargin=1.8 * cm,
