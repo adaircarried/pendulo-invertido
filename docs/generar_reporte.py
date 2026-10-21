@@ -22,6 +22,7 @@ IMAGEN = sys.argv[2]
 LOGO_UPA = sys.argv[3]
 LOGO_MECA = sys.argv[4]
 ALUMNO = sys.argv[5] if len(sys.argv) > 5 else "[nombre del alumno]"
+MATRICULA = sys.argv[6] if len(sys.argv) > 6 else "[matrícula]"
 AZUL = colors.HexColor("#1F3A5F")
 GRIS = colors.HexColor("#EEF1F5")
 
@@ -70,7 +71,7 @@ h.append(Spacer(1, 0.5 * cm))
 h.append(Paragraph("Evidencia de producto · Unidad 2: Controladores digitales", portadaDato))
 h.append(Spacer(1, 2.2 * cm))
 for etiqueta, dato in (("Materia", "Control Avanzado"), ("Carrera", "Ingeniería Mecatrónica"),
-                       ("Grupo", "MTR09A"), ("Equipo", "8"), ("Alumno", ALUMNO)):
+                       ("Grupo", "MTR09A"), ("Equipo", "8"), ("Alumno", ALUMNO), ("Matrícula", MATRICULA)):
     h.append(Paragraph(etiqueta, portadaEtiqueta))
     h.append(Paragraph(dato, portadaDato))
     h.append(Spacer(1, 0.15 * cm))
