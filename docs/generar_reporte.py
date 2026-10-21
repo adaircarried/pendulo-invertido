@@ -1,5 +1,5 @@
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+from reportlab.platypus import (PageBreak, SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
                                 Image, Preformatted, KeepTogether)
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm
@@ -19,6 +19,9 @@ addMapping("DV", 0, 0, "DV"); addMapping("DV", 1, 0, "DVB"); addMapping("DV", 0,
 
 SALIDA = sys.argv[1]
 IMAGEN = sys.argv[2]
+LOGO_UPA = sys.argv[3]
+LOGO_MECA = sys.argv[4]
+ALUMNO = sys.argv[5] if len(sys.argv) > 5 else "[nombre del alumno]"
 AZUL = colors.HexColor("#1F3A5F")
 GRIS = colors.HexColor("#EEF1F5")
 
@@ -28,7 +31,7 @@ sub = ParagraphStyle("s", fontName="DV", fontSize=10, leading=14, alignment=TA_C
 h1 = ParagraphStyle("h1", fontName="DVB", fontSize=11.5, leading=15, textColor=AZUL, spaceBefore=9, spaceAfter=4)
 ecu = ParagraphStyle("e", fontName="DV", fontSize=10, leading=15, alignment=TA_CENTER, spaceBefore=2, spaceAfter=6)
 celda = ParagraphStyle("cel", fontName="DV", fontSize=8.6, leading=11)
-celdaB = ParagraphStyle("celb", parent=celda, fontName="DVB", textColor=colors.white)
+celdaB = ParagraphStyle("celb", parent=celda, fontName="DVB")
 pie = ParagraphStyle("pie", fontName="DVI", fontSize=8.6, leading=11, alignment=TA_CENTER, spaceAfter=6)
 codigo = ParagraphStyle("cod", fontName="DVM", fontSize=7.9, leading=10.2)
 
@@ -42,21 +45,38 @@ def tabla(filas, anchos):
     datos = [[Paragraph(c, celdaB if i == 0 else celda) for c in f] for i, f in enumerate(filas)]
     t = Table(datos, colWidths=anchos, repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, GRIS]),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#B8C2CF")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEABOVE", (0, 0), (-1, 0), 1.0, colors.black),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.6, colors.black),
+        ("LINEBELOW", (0, -1), (-1, -1), 1.0, colors.black),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
         ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
-    return t
+    return KeepTogether([t])
 
 
 h = []
-h.append(Paragraph("Control digital de un péndulo invertido lineal<br/>con ESP32 y motor a pasos", titulo))
-h.append(Paragraph("Control Avanzado · Unidad 2: Controladores digitales", sub))
-h.append(Paragraph("Grupo MTR09A · Equipo 8", sub))
-h.append(Paragraph("Integrantes: [nombres de los integrantes]", sub))
-h.append(Spacer(1, 6))
+# ---------------- Portada
+logos = Table([[Image(LOGO_UPA, width=5.6 * cm, height=5.6 * cm * 600 / 801),
+                Image(LOGO_MECA, width=7.4 * cm, height=7.4 * cm * 281 / 889)]], colWidths=[8.3 * cm, 8.3 * cm])
+logos.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+portadaTitulo = ParagraphStyle("pt", parent=titulo, fontSize=21, leading=28)
+portadaDato = ParagraphStyle("pd", parent=sub, fontSize=12, leading=19)
+portadaEtiqueta = ParagraphStyle("pe", parent=sub, fontName="DVB", fontSize=12, leading=19, textColor=AZUL)
+h.append(logos)
+h.append(Spacer(1, 2.6 * cm))
+h.append(Paragraph("Control digital de un péndulo<br/>invertido lineal con ESP32<br/>y motor a pasos", portadaTitulo))
+h.append(Spacer(1, 0.5 * cm))
+h.append(Paragraph("Evidencia de producto · Unidad 2: Controladores digitales", portadaDato))
+h.append(Spacer(1, 2.2 * cm))
+for etiqueta, dato in (("Materia", "Control Avanzado"), ("Carrera", "Ingeniería Mecatrónica"),
+                       ("Grupo", "MTR09A"), ("Equipo", "8"), ("Alumno", ALUMNO)):
+    h.append(Paragraph(etiqueta, portadaEtiqueta))
+    h.append(Paragraph(dato, portadaDato))
+    h.append(Spacer(1, 0.15 * cm))
+h.append(Spacer(1, 1.2 * cm))
+h.append(Paragraph("Aguascalientes, Ags. · Octubre de 2026", portadaDato))
+h.append(PageBreak())
 
 h.append(H("1. Objetivo"))
 h.append(P("Estabilizar un péndulo invertido sobre un carro en la posición vertical mediante un controlador PD digital "
@@ -204,5 +224,5 @@ def numerar(canvas, doc):
 
 doc = SimpleDocTemplate(SALIDA, pagesize=letter, leftMargin=2.2 * cm, rightMargin=2.2 * cm,
                         topMargin=1.8 * cm, bottomMargin=1.8 * cm,
-                        title="Control digital de un péndulo invertido lineal", author="Grupo MTR09A, Equipo 8")
-doc.build(h, onFirstPage=numerar, onLaterPages=numerar)
+                        title="Control digital de un péndulo invertido lineal", author=ALUMNO)
+doc.build(h, onLaterPages=numerar)
